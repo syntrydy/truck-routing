@@ -132,7 +132,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `PlaceInput` (debounced 300 ms, keyboard navigable combobox, aria), datetime-local with timezone label, load input, interval segmented control, client validation mirroring the API, stale-inputs detection.
   - AC: component tests for debounce, keyboard selection, validation messages; axe check passes.
 
-- [ ] **B-30 feat(web): routes and checkpoints on the map** — `type:feat` `area:frontend`
+- [x] **B-30 feat(web): routes and checkpoints on the map** — #70 — `type:feat` `area:frontend`
   - Route line layers (recommended emphasized), single checkpoint source with data-driven colors, popups with ETA/weather/reasons, fit bounds after plan, hover/select sync with cards.
   - AC: layer data built in pure functions with unit tests; popup content test.
 
