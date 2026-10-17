@@ -1,20 +1,15 @@
 """Trying routing providers in order (SPEC section 6: routing OSRM then openrouteservice)."""
 
-import logging
 from collections.abc import Callable, Sequence
 
 from planner.domain.models import LatLon
-from planner.infra.errors import UpstreamContractError, UpstreamTimeout, UpstreamUnavailable
 from planner.infra.http import UpstreamClient
+from planner.providers.fallback import FALL_THROUGH, first_success
 from planner.providers.protocols import RoutingProvider, RoutingResult
 from planner.providers.routing_ors import OrsRoutingProvider
 from planner.providers.routing_osrm import OsrmRoutingProvider
 
-logger = logging.getLogger(__name__)
-
-# A provider that is down, too slow or answering nonsense is replaced by the next one.
-# NoRoute is an answer, not a failure, and other rejections would be rejected again.
-FALL_THROUGH = (UpstreamUnavailable, UpstreamTimeout, UpstreamContractError)
+__all__ = ["FALL_THROUGH", "FallbackRoutingProvider", "build_routing_provider"]
 
 
 class FallbackRoutingProvider:
@@ -39,16 +34,7 @@ class FallbackRoutingProvider:
         return self._first_success(lambda provider: provider.route_via(origin, via, destination))
 
     def _first_success(self, ask: Callable[[RoutingProvider], RoutingResult]) -> RoutingResult:
-        failures: list[Exception] = []
-        for provider in self._providers:
-            try:
-                return ask(provider)
-            except FALL_THROUGH as error:
-                logger.warning(
-                    "routing provider %s failed (%s)", provider.name, type(error).__name__
-                )
-                failures.append(error)
-        raise failures[-1]
+        return first_success(self._providers, ask)
 
 
 def build_routing_provider(client: UpstreamClient, ors_api_key: str = "") -> RoutingProvider:
