@@ -66,7 +66,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/ranking.py`: sort key per SPEC §4.7; reason from first separating criterion; NO_SAFE_ROUTE when all routes have No Travel miles.
   - AC: one test per tie-breaker level; No Travel outranks Severe; float-noise tie falls through; all-No-Travel → `None` + banner.
 
-- [ ] **B-15 feat(domain): route candidate selection** — `type:feat` `area:backend`
+- [x] **B-15 feat(domain): route candidate selection — #31** — `type:feat` `area:backend`
   - `domain/routes_select.py`: via-point computation (both sides), overlap-based dedupe, detour-length rejection, top-3 by duration, notes.
   - AC: identical routes deduped; > 40% longer detour rejected; returns ≤ 3; note when < 3.
 
