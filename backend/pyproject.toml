@@ -29,7 +29,8 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings_test"
 testpaths = ["tests"]
-addopts = "--cov=planner --cov=config --cov-report=term-missing --cov-report=xml"
+markers = ["live: calls a real external service; opt in with -m live"]
+addopts = "-m \"not live\" --cov=planner --cov=config --cov-report=term-missing --cov-report=xml"
 
 [tool.coverage.run]
 branch = true
