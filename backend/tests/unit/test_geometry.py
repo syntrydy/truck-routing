@@ -10,9 +10,11 @@ from planner.domain.geometry import (
     bearing_deg,
     cumulative_distances_m,
     destination_point,
+    distance_to_polyline_m,
     haversine_m,
     perpendicular_offset,
     point_at_distance,
+    simplify,
 )
 from planner.domain.models import LatLon
 
@@ -246,3 +248,143 @@ class TestPerpendicularOffset:
         point = perpendicular_offset(NEW_YORK, 123.0, 0.0)
 
         assert haversine_m(NEW_YORK, point) == pytest.approx(0.0, abs=1e-6)
+
+
+class TestDistanceToPolyline:
+    LINE = (LatLon(0.0, 0.0), LatLon(0.0, 1.0))
+
+    def test_point_on_the_line_is_zero(self) -> None:
+        assert distance_to_polyline_m(LatLon(0.0, 0.5), self.LINE) == pytest.approx(0.0, abs=1e-6)
+
+    def test_point_beside_the_line(self) -> None:
+        distance = distance_to_polyline_m(LatLon(0.009, 0.5), self.LINE)
+
+        assert_close_pct(distance, 0.009 * ONE_DEGREE_M)
+
+    def test_point_beyond_the_end_measures_to_the_endpoint(self) -> None:
+        distance = distance_to_polyline_m(LatLon(0.0, 1.01), self.LINE)
+
+        assert_close_pct(distance, 0.01 * ONE_DEGREE_M)
+
+    def test_uses_the_nearest_segment(self) -> None:
+        route = [LatLon(0.0, 0.0), LatLon(0.0, 1.0), LatLon(1.0, 1.0)]
+
+        distance = distance_to_polyline_m(LatLon(0.5, 1.009), route)
+
+        assert_close_pct(distance, 0.009 * ONE_DEGREE_M)
+
+    def test_agrees_with_haversine_at_high_latitude(self) -> None:
+        route = [LatLon(60.0, 10.0), LatLon(60.0, 11.0)]
+        point = destination_point(LatLon(60.0, 10.5), 0.0, 5_000.0)
+
+        assert_close_pct(distance_to_polyline_m(point, route), 5_000.0)
+
+    def test_east_west_distances_shrink_with_latitude(self) -> None:
+        route = [LatLon(60.0, 10.0), LatLon(60.0, 11.0)]
+        beyond_end = destination_point(LatLon(60.0, 11.0), 90.0, 700.0)
+
+        assert_close_pct(distance_to_polyline_m(beyond_end, route), 700.0)
+
+    def test_single_point_polyline(self) -> None:
+        distance = distance_to_polyline_m(LatLon(0.0, 0.01), [ORIGIN])
+
+        assert_close_pct(distance, 0.01 * ONE_DEGREE_M)
+
+    def test_degenerate_segment_is_a_point(self) -> None:
+        distance = distance_to_polyline_m(LatLon(0.0, 0.01), [ORIGIN, ORIGIN])
+
+        assert_close_pct(distance, 0.01 * ONE_DEGREE_M)
+
+    def test_rejects_empty_polyline(self) -> None:
+        with pytest.raises(ValueError, match="no points"):
+            distance_to_polyline_m(ORIGIN, [])
+
+
+class TestSimplify:
+    def test_keeps_both_endpoints(self) -> None:
+        line = [LatLon(0.0, x / 100) for x in range(50)]
+
+        result = simplify(line, 100.0)
+
+        assert result[0] == line[0]
+        assert result[-1] == line[-1]
+
+    def test_removes_collinear_points(self) -> None:
+        line = [LatLon(0.0, x / 100) for x in range(50)]
+
+        assert simplify(line, 1.0) == [line[0], line[-1]]
+
+    def test_keeps_a_corner_that_exceeds_the_tolerance(self) -> None:
+        corner = LatLon(0.1, 0.5)
+        line = [LatLon(0.0, 0.0), corner, LatLon(0.0, 1.0)]
+
+        assert simplify(line, 1_000.0) == line
+
+    def test_drops_a_bump_within_the_tolerance(self) -> None:
+        bump = LatLon(0.001, 0.5)
+        line = [LatLon(0.0, 0.0), bump, LatLon(0.0, 1.0)]
+
+        assert simplify(line, 500.0) == [line[0], line[-1]]
+
+    def test_zero_tolerance_keeps_every_bend(self) -> None:
+        line = [LatLon(0.0, 0.0), LatLon(0.001, 0.5), LatLon(0.0, 1.0), LatLon(0.001, 1.5)]
+
+        assert simplify(line, 0.0) == line
+
+    @pytest.mark.parametrize("count", [0, 1, 2])
+    def test_short_polylines_are_returned_unchanged(self, count: int) -> None:
+        line = [ORIGIN, LatLon(1.0, 1.0)][:count]
+
+        assert simplify(line, 100.0) == line
+
+    def test_rejects_negative_tolerance(self) -> None:
+        with pytest.raises(ValueError, match="negative"):
+            simplify([ORIGIN, LatLon(1.0, 1.0), LatLon(2.0, 0.0)], -1.0)
+
+    def test_does_not_modify_its_input(self) -> None:
+        line = [LatLon(0.0, 0.0), LatLon(0.1, 0.5), LatLon(0.0, 1.0)]
+        copy = list(line)
+
+        simplify(line, 100.0)
+
+        assert line == copy
+
+    def test_handles_long_routes_without_recursion_limits(self) -> None:
+        line = [LatLon(40.0 + 0.05 * math.sin(i / 400), -100.0 + i * 0.001) for i in range(5_000)]
+
+        result = simplify(line, 10.0)
+
+        assert result[0] == line[0]
+        assert result[-1] == line[-1]
+        assert 2 < len(result) < len(line)
+
+    def test_keeps_every_point_of_a_zigzag_larger_than_the_tolerance(self) -> None:
+        line = [LatLon(40.0 + (i % 2) * 0.0005, -100.0 + i * 0.001) for i in range(400)]
+
+        assert simplify(line, 10.0) == line
+
+    @given(
+        st.lists(
+            st.tuples(
+                st.floats(min_value=-0.05, max_value=0.05), st.floats(min_value=0, max_value=0.05)
+            ),
+            min_size=3,
+            max_size=40,
+        ),
+        st.floats(min_value=50, max_value=2_000),
+    )
+    def test_every_dropped_point_stays_within_the_tolerance(
+        self, steps: list[tuple[float, float]], tolerance_m: float
+    ) -> None:
+        line = [LatLon(40.0, -100.0)]
+        for d_lat, d_lon in steps:
+            last = line[-1]
+            line.append(LatLon(last.lat + d_lat, last.lon + d_lon))
+
+        simplified = simplify(line, tolerance_m)
+
+        assert simplified[0] == line[0]
+        assert simplified[-1] == line[-1]
+        assert all(point in line for point in simplified)
+        for point in line:
+            assert distance_to_polyline_m(point, simplified) <= tolerance_m * 1.02 + 1.0
