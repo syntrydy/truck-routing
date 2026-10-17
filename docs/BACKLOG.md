@@ -114,7 +114,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `GET /api/geocode`, `GET /api/ready`, django-ratelimit on plan and geocode with JSON 429.
   - AC: tests for min/max query length, 429 envelope, ready reports breaker states.
 
-- [ ] **B-26 feat(api): production hardening and observability** — `type:feat` `area:backend`
+- [x] **B-26 feat(api): production hardening and observability** — #62 — `type:feat` `area:backend`
   - Request-ID middleware, JSON logging with per-plan metrics, GZip middleware, security settings per SPEC §8, gunicorn config.
   - AC: `check --deploy` clean with prod env; logs contain request_id and metrics; coordinates truncated in logs.
 
