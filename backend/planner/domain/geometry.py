@@ -7,7 +7,7 @@ point, which is accurate to well under 1% over the tens of kilometers that matte
 
 import math
 from bisect import bisect_right
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from planner.domain.models import LatLon
 
@@ -168,3 +168,68 @@ def _distance_to_segment(p: Point2D, a: Point2D, b: Point2D) -> float:
         return math.hypot(p[0] - ax, p[1] - ay)
     t = max(0.0, min(1.0, ((p[0] - ax) * dx + (p[1] - ay) * dy) / length_sq))
     return math.hypot(p[0] - (ax + t * dx), p[1] - (ay + t * dy))
+
+
+def sample_along(points: Sequence[LatLon], spacing_m: float) -> list[LatLon]:
+    """Points every ``spacing_m`` along the polyline, always including its last point."""
+    cumulative = cumulative_distances_m(points)
+    total = cumulative[-1]
+    steps = math.floor(total / spacing_m)
+    samples = [point_at_distance(points, cumulative, step * spacing_m) for step in range(steps + 1)]
+    if steps * spacing_m < total:
+        samples.append(points[-1])
+    return samples
+
+
+class ProximityIndex:
+    """Answers "is this point within ``radius_m`` of the polylines?" in near-constant time.
+
+    The polylines are densified every ``spacing_m`` and the points are bucketed in a grid
+    whose cells are at least ``radius_m`` wide, so only the 3x3 cells around a query need
+    checking. Distances are measured to the densified points with a local flat approximation
+    (negligible error at these radii). A point whose true distance to a polyline is within
+    ``radius_m`` can therefore be missed only by up to half of ``spacing_m``; callers that
+    must never miss widen the radius by that much.
+    """
+
+    LATITUDE_MARGIN_DEG = 0.1
+    MAX_LATITUDE_DEG = 89.0
+
+    def __init__(
+        self, polylines: Iterable[Sequence[LatLon]], radius_m: float, spacing_m: float
+    ) -> None:
+        if radius_m <= 0 or spacing_m <= 0:
+            msg = "radius and spacing must be positive"
+            raise ValueError(msg)
+        dense = [point for line in polylines for point in sample_along(line, spacing_m)]
+        if not dense:
+            msg = "no polylines to index"
+            raise ValueError(msg)
+        self._radius_m = radius_m
+        max_latitude = min(
+            max(abs(point.lat) for point in dense) + self.LATITUDE_MARGIN_DEG,
+            self.MAX_LATITUDE_DEG,
+        )
+        self._cell_lat = radius_m / METERS_PER_DEGREE
+        self._cell_lon = self._cell_lat / math.cos(math.radians(max_latitude))
+        self._cells: dict[tuple[int, int], list[LatLon]] = {}
+        for point in dense:
+            self._cells.setdefault(self._cell_of(point), []).append(point)
+
+    def is_near(self, point: LatLon) -> bool:
+        """Whether some indexed point is within the radius of ``point``."""
+        row, col = self._cell_of(point)
+        cos_lat = math.cos(math.radians(point.lat))
+        limit_sq = self._radius_m * self._radius_m
+        for d_row in (-1, 0, 1):
+            for d_col in (-1, 0, 1):
+                for other in self._cells.get((row + d_row, col + d_col), ()):
+                    d_lon = (other.lon - point.lon + 180.0) % 360.0 - 180.0
+                    dx = d_lon * cos_lat * METERS_PER_DEGREE
+                    dy = (other.lat - point.lat) * METERS_PER_DEGREE
+                    if dx * dx + dy * dy <= limit_sq:
+                        return True
+        return False
+
+    def _cell_of(self, point: LatLon) -> tuple[int, int]:
+        return math.floor(point.lat / self._cell_lat), math.floor(point.lon / self._cell_lon)

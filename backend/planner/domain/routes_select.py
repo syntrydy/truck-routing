@@ -5,17 +5,17 @@ points). The fastest is always kept; others are dropped when they are an overlon
 detour or mostly follow a route that was already kept.
 """
 
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from planner.domain.geometry import (
-    METERS_PER_DEGREE,
+    ProximityIndex,
     bearing_deg,
     cumulative_distances_m,
     haversine_m,
     perpendicular_offset,
     point_at_distance,
+    sample_along,
 )
 from planner.domain.models import LatLon
 
@@ -30,11 +30,9 @@ VIA_OFFSET_SHARE = 0.08
 DUPLICATE_OVERLAP_SHARE = 0.85
 SAMPLE_SPACING_M = 1_000.0
 NEAR_DISTANCE_M = 1_000.0
-# The proximity index looks at route points this far apart; it widens the near-distance by
-# half of that so a point truly within NEAR_DISTANCE_M of the line is never missed.
+# The proximity index looks at route points this far apart; the search radius is widened
+# by half of that so a point truly within NEAR_DISTANCE_M of the line is never missed.
 INDEX_SPACING_M = NEAR_DISTANCE_M / 4
-MAX_INDEX_LATITUDE = 89.0
-LATITUDE_MARGIN_DEG = 0.1
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,7 +86,7 @@ def select_routes(candidates: Sequence[RouteCandidate]) -> Selection:
     by_duration = sorted(candidates, key=lambda route: route.duration_s)
     fastest = by_duration[0]
     kept = [fastest]
-    indexes = [_ProximityIndex(fastest.points)]
+    indexes = [_index(fastest.points)]
     for candidate in by_duration[1:]:
         if len(kept) == MAX_ROUTES:
             break
@@ -97,7 +95,7 @@ def select_routes(candidates: Sequence[RouteCandidate]) -> Selection:
         if _overlap_share(candidate.points, indexes) > DUPLICATE_OVERLAP_SHARE:
             continue
         kept.append(candidate)
-        indexes.append(_ProximityIndex(candidate.points))
+        indexes.append(_index(candidate.points))
 
     notes = (_too_few_note(len(kept)),) if len(kept) < MAX_ROUTES else ()
     return Selection(routes=tuple(kept), notes=notes)
@@ -109,53 +107,12 @@ def _too_few_note(count: int) -> str:
     return f"Only {count} distinct routes exist for this trip"
 
 
-def _overlap_share(points: Sequence[LatLon], kept: Sequence["_ProximityIndex"]) -> float:
+def _index(points: Sequence[LatLon]) -> ProximityIndex:
+    return ProximityIndex([points], NEAR_DISTANCE_M + INDEX_SPACING_M / 2, INDEX_SPACING_M)
+
+
+def _overlap_share(points: Sequence[LatLon], kept: Sequence[ProximityIndex]) -> float:
     """Share of the route's 1 km samples that lie near any kept route."""
-    samples = _sample_every(points, SAMPLE_SPACING_M)
+    samples = sample_along(points, SAMPLE_SPACING_M)
     near = sum(1 for sample in samples if any(index.is_near(sample) for index in kept))
     return near / len(samples)
-
-
-def _sample_every(points: Sequence[LatLon], spacing_m: float) -> list[LatLon]:
-    """Points every ``spacing_m`` along the route, always including the last point."""
-    cumulative = cumulative_distances_m(points)
-    total = cumulative[-1]
-    steps = math.floor(total / spacing_m)
-    samples = [point_at_distance(points, cumulative, step * spacing_m) for step in range(steps + 1)]
-    if steps * spacing_m < total:
-        samples.append(points[-1])
-    return samples
-
-
-class _ProximityIndex:
-    """Answers "is this point within ``NEAR_DISTANCE_M`` of the route?" in near-constant time.
-
-    The route is densified every ``INDEX_SPACING_M`` and its points are bucketed in a grid
-    whose cells are at least as large as the search radius, so only the 3x3 cells around a
-    query need checking. Distances are measured to the densified points, which can
-    overstate the true distance by at most half the spacing, hence the widened radius.
-    """
-
-    def __init__(self, route: Sequence[LatLon]) -> None:
-        self._reach_m = NEAR_DISTANCE_M + INDEX_SPACING_M / 2
-        dense = _sample_every(route, INDEX_SPACING_M)
-        max_latitude = min(
-            max(abs(point.lat) for point in dense) + LATITUDE_MARGIN_DEG, MAX_INDEX_LATITUDE
-        )
-        self._cell_lat = self._reach_m / METERS_PER_DEGREE
-        self._cell_lon = self._cell_lat / math.cos(math.radians(max_latitude))
-        self._cells: dict[tuple[int, int], list[LatLon]] = {}
-        for point in dense:
-            self._cells.setdefault(self._cell_of(point), []).append(point)
-
-    def is_near(self, point: LatLon) -> bool:
-        row, col = self._cell_of(point)
-        return any(
-            haversine_m(point, candidate) <= self._reach_m
-            for d_row in (-1, 0, 1)
-            for d_col in (-1, 0, 1)
-            for candidate in self._cells.get((row + d_row, col + d_col), ())
-        )
-
-    def _cell_of(self, point: LatLon) -> tuple[int, int]:
-        return math.floor(point.lat / self._cell_lat), math.floor(point.lon / self._cell_lon)
