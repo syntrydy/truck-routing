@@ -9,6 +9,7 @@ dependencies = [
     "django-ratelimit>=4.1.0",
     "djangorestframework>=3.18.3",
     "drf-spectacular>=0.30.0",
+    "gunicorn>=26.2.0",
     "redis>=8.1.0",
 ]
 
@@ -51,6 +52,7 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "PLR2004"]
 "conftest.py" = ["S101"]
+"config/gunicorn.conf.py" = ["N999"]  # the file name is the one gunicorn looks for
 
 [tool.ruff.format]
 quote-style = "double"

@@ -279,7 +279,7 @@ backend/
   config/            settings (env-driven), urls, wsgi, gunicorn.conf.py
   planner/
     domain/          pure: models, risk, geometry, sampling, weather_select, scoring, ranking, corridor, routes_select
-    infra/           http (timeouts, retry, breaker, deadline), cache, ratelimit, logging
+    infra/           http (timeouts, retry, breaker, deadline), cache, metrics (per-request counters), jsonlog (JSON log formatter)
     providers/       routing_osrm, routing_ors, weather_openmeteo, geocode_photon, geocode_nominatim, protocols
     services/        plan (facade), container (DI)
     api/             serializers, views, errors, urls

@@ -77,6 +77,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "planner.api.middleware.RequestIdMiddleware",
+    # The plan response is a few hundred kB of JSON. Nothing in it is secret or reflects the
+    # caller's input, so compression leaks nothing (BREACH).
+    "django.middleware.gzip.GZipMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -105,6 +108,24 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 if env.bool("TRUST_PROXY_SSL_HEADER", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Structured JSON logs on stdout, one object per line, each with the request ID (SPEC section 9).
+LOG_LEVEL = env("LOG_LEVEL", default="INFO")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"request_id": {"()": "planner.infra.jsonlog.RequestIdFilter"}},
+    "formatters": {"json": {"()": "planner.infra.jsonlog.JsonFormatter"}},
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "json",
+            "filters": ["request_id"],
+        }
+    },
+    "root": {"handlers": ["stdout"], "level": LOG_LEVEL},
+}
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
