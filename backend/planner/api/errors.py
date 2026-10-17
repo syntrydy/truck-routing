@@ -10,10 +10,12 @@ import math
 from typing import Any
 
 from django.http import Http404, HttpRequest, JsonResponse
+from django_ratelimit.exceptions import Ratelimited
 from rest_framework import exceptions
 from rest_framework.response import Response
 
 from planner.api.middleware import get_request_id
+from planner.api.ratelimit import RETRY_AFTER_S
 from planner.infra.errors import UpstreamError, UpstreamTimeout, UpstreamUnavailable
 from planner.providers.protocols import NoRoute
 from planner.services.models import TooClose
@@ -62,6 +64,7 @@ FIXED_ERRORS: tuple[tuple[type[Exception], int, str], ...] = (
     (UpstreamUnavailable, HTTP_UNAVAILABLE, "UPSTREAM_UNAVAILABLE"),
     (UpstreamError, HTTP_BAD_GATEWAY, "UPSTREAM_ERROR"),
     (exceptions.Throttled, HTTP_TOO_MANY_REQUESTS, "RATE_LIMITED"),
+    (Ratelimited, HTTP_TOO_MANY_REQUESTS, "RATE_LIMITED"),
     (Http404, HTTP_NOT_FOUND, "NOT_FOUND"),
 )
 
@@ -74,6 +77,8 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     wait = getattr(exc, "wait", None) if isinstance(exc, exceptions.Throttled) else None
     if wait is not None:
         response["Retry-After"] = str(max(1, math.ceil(wait)))
+    elif isinstance(exc, Ratelimited):
+        response["Retry-After"] = str(RETRY_AFTER_S)
     return response
 
 
