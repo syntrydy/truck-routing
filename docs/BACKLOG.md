@@ -70,7 +70,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/routes_select.py`: via-point computation (both sides), overlap-based dedupe, detour-length rejection, top-3 by duration, notes.
   - AC: identical routes deduped; > 40% longer detour rejected; returns ≤ 3; note when < 3.
 
-- [ ] **B-16 feat(domain): corridor heatmap grid** — `type:feat` `area:backend`
+- [x] **B-16 feat(domain): corridor heatmap grid — #33** — `type:feat` `area:backend`
   - `domain/corridor.py`: buffered bbox, adaptive spacing to ≤ 200 points, corridor mask (25 km), frame assembly given point series.
   - AC: short and cross-country fixtures both ≤ 200 points and ≥ 20 points; all points within 25 km of a route.
 
