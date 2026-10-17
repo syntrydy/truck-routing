@@ -22,8 +22,9 @@ from planner.infra.errors import (
     UpstreamError,
     UpstreamTimeout,
     UpstreamUnavailable,
+    UpstreamWaitTimeout,
 )
-from planner.infra.resilience import CircuitBreaker, Clock, Deadline, current_deadline
+from planner.infra.resilience import CircuitBreaker, Clock, Deadline, MinSpacing, current_deadline
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,11 @@ HTTP_TOO_MANY_REQUESTS = 429
 HTTP_SERVER_ERROR = 500
 HTTP_CLIENT_ERROR = 400
 HTTPS = "https"
+MAX_ERROR_BODY = 2_000
+
+
+Gate = Callable[[Deadline | None], None]
+"""Called before each HTTP attempt of a provider; may wait, or raise ``UpstreamWaitTimeout``."""
 
 
 class Jitter(Protocol):
@@ -56,6 +62,10 @@ class ProviderPolicy:
 ROUTING_TIMEOUT_S = 8.0
 WEATHER_TIMEOUT_S = 10.0
 GEOCODE_TIMEOUT_S = 4.0
+# The public OSRM server allows about one request per second; keep a margin.
+OSRM_MIN_SPACING_S = 1.1
+# Shared by every client in the process, so all workers' threads take turns.
+_OSRM_SPACING = MinSpacing(OSRM_MIN_SPACING_S, "osrm")
 
 
 def default_policies() -> list[ProviderPolicy]:
@@ -67,10 +77,6 @@ def default_policies() -> list[ProviderPolicy]:
         ProviderPolicy("photon", GEOCODE_TIMEOUT_S, max_concurrency=2),
         ProviderPolicy("nominatim", GEOCODE_TIMEOUT_S, max_concurrency=2),
     ]
-
-
-class _LocalTimeout(UpstreamTimeout):
-    """Timed out before the provider was asked (no budget or no free slot): not its fault."""
 
 
 class _ProviderState:
@@ -90,6 +96,7 @@ class UpstreamClient:
         user_agent: str,
         *,
         http_client: httpx.Client | None = None,
+        gates: Mapping[str, Gate] | None = None,
         clock: Clock = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
         jitter: Jitter | None = None,
@@ -97,6 +104,7 @@ class UpstreamClient:
         self._providers: Mapping[str, _ProviderState] = {
             policy.name: _ProviderState(policy, clock) for policy in policies
         }
+        self._gates: Mapping[str, Gate] = gates or {}
         self._allowed_hosts = frozenset(host.lower() for host in allowed_hosts)
         self._user_agent = user_agent
         self._http = http_client or httpx.Client(follow_redirects=False)
@@ -149,7 +157,7 @@ class UpstreamClient:
             raise UpstreamUnavailable(provider, msg)
         try:
             response = self._send_with_retries(state, url, params, deadline)
-        except _LocalTimeout:
+        except UpstreamWaitTimeout:
             state.breaker.release()
             raise
         except (UpstreamTimeout, UpstreamUnavailable):
@@ -191,7 +199,7 @@ class UpstreamClient:
                 self._sleep(delay)
             try:
                 response, failure = self._attempt(state, url, params, deadline)
-            except _LocalTimeout:
+            except UpstreamWaitTimeout:
                 if last_failure is None:
                     raise
                 break  # no time left to retry: report the failure that made us retry
@@ -216,16 +224,19 @@ class UpstreamClient:
         wait_s = _call_timeout(policy, deadline)
         if wait_s is None:
             msg = "request deadline exhausted"
-            raise _LocalTimeout(policy.name, msg)
+            raise UpstreamWaitTimeout(policy.name, msg)
         if not state.slots.acquire(timeout=wait_s):
             msg = "no free connection slot in time"
-            raise _LocalTimeout(policy.name, msg)
+            raise UpstreamWaitTimeout(policy.name, msg)
         try:
-            # Waiting for the slot used up budget, so the timeout is worked out again.
+            gate = self._gates.get(policy.name)
+            if gate is not None:
+                gate(deadline)
+            # Waiting for the slot and the gate used up budget, so the timeout is worked out again.
             timeout_s = _call_timeout(policy, deadline)
             if timeout_s is None:
                 msg = "request deadline exhausted"
-                raise _LocalTimeout(policy.name, msg)
+                raise UpstreamWaitTimeout(policy.name, msg)
             response = self._http.get(
                 url,
                 params=params,
@@ -251,7 +262,9 @@ class UpstreamClient:
             return None, UpstreamUnavailable(policy.name, f"HTTP {status}")
         if status >= HTTP_CLIENT_ERROR or response.is_redirect:
             msg = f"HTTP {status}"
-            raise UpstreamError(policy.name, msg)
+            raise UpstreamError(
+                policy.name, msg, status=status, body=response.text[:MAX_ERROR_BODY]
+            )
         return response, None
 
 
@@ -271,4 +284,5 @@ def upstream_client_from_settings() -> UpstreamClient:
         default_policies(),
         settings.UPSTREAM_ALLOWED_HOSTS,
         settings.UPSTREAM_USER_AGENT,
+        gates={"osrm": _OSRM_SPACING},
     )

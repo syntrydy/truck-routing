@@ -7,6 +7,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from enum import StrEnum
 
+from planner.infra.errors import UpstreamWaitTimeout
+
 Clock = Callable[[], float]
 
 
@@ -124,3 +126,42 @@ class CircuitBreaker:
         ):
             return BreakerState.HALF_OPEN
         return self._state
+
+
+class MinSpacing:
+    """Keeps requests at least ``spacing_s`` apart, process-wide, for rate-limited providers.
+
+    Callers wait their turn under a lock, so concurrent threads are serialised. If the
+    wait would not fit in the request's deadline, ``UpstreamWaitTimeout`` is raised
+    instead of sleeping, and the turn is not consumed.
+    """
+
+    def __init__(
+        self,
+        spacing_s: float,
+        provider: str,
+        clock: Clock = time.monotonic,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        self._spacing_s = spacing_s
+        self._provider = provider
+        self._clock = clock
+        self._sleep = sleep
+        self._lock = threading.Lock()
+        self._last_start: float | None = None
+
+    @property
+    def spacing_s(self) -> float:
+        return self._spacing_s
+
+    def __call__(self, deadline: Deadline | None) -> None:
+        """Wait until a request may start, then claim the turn."""
+        with self._lock:
+            if self._last_start is not None:
+                wait_s = self._last_start + self._spacing_s - self._clock()
+                if wait_s > 0:
+                    if deadline is not None and wait_s >= deadline.remaining():
+                        msg = "no time left to wait for the request spacing"
+                        raise UpstreamWaitTimeout(self._provider, msg)
+                    self._sleep(wait_s)
+            self._last_start = self._clock()
