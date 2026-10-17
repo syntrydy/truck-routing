@@ -80,7 +80,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `infra/http.py`: shared httpx client, per-provider timeouts, retry with full-jitter backoff (5xx/429/connect only), circuit breaker (3 failures, 60 s), deadline budget context, bulkhead semaphores, host allowlist, User-Agent from settings, typed exceptions (`UpstreamTimeout`, `UpstreamUnavailable`, `UpstreamError`, `UpstreamContractError`).
   - AC: respx tests for timeout, retry-then-success, no retry on 400, breaker opens and half-opens (time injected, no sleeps), deadline exhaustion, non-allowlisted host rejected.
 
-- [ ] **B-18 feat(infra): cache layer with stale-if-error** — `type:feat` `area:backend`
+- [x] **B-18 feat(infra): cache layer with stale-if-error — #37** — `type:feat` `area:backend`
   - `infra/cache.py`: cache-aside helper storing value + fetched_at; fresh TTL and stale window; key builders with coordinate rounding; LocMem default, Redis via `REDIS_URL`.
   - AC: tests for hit, miss, stale served on loader error with flag, stale window expiry raises.
 
