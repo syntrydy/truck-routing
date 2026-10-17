@@ -8,6 +8,7 @@ repos:
       - id: check-yaml
       - id: check-json
       - id: end-of-file-fixer
+        exclude: ^backend/openapi/schema\.json$ # generated; CI compares it byte for byte
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: detect-private-key

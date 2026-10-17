@@ -1,0 +1,795 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Weather-Aware Truck Routing API",
+        "version": "0.1.0",
+        "description": "Safest-route planning for trucks based on weather along the route."
+    },
+    "paths": {
+        "/api/geocode": {
+            "get": {
+                "operationId": "geocode",
+                "description": "Photon first, Nominatim when Photon fails. Answers are cached for 24 hours; no match is an empty list.",
+                "summary": "Search for a place",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "q",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "What to look for, 3 to 100 characters once spacing is tidied.",
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "geocode"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeocodeResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`VALIDATION`: `q` is missing, too short or too long."
+                    },
+                    "429": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`RATE_LIMITED`."
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_ERROR`: every geocoder returned an error."
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_UNAVAILABLE`: every geocoder is down."
+                    },
+                    "504": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_TIMEOUT`: the geocoders were too slow."
+                    }
+                }
+            }
+        },
+        "/api/health": {
+            "get": {
+                "operationId": "health",
+                "description": "Liveness probe. Makes no upstream calls.",
+                "tags": [
+                    "health"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Health"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/plan": {
+            "post": {
+                "operationId": "plan",
+                "description": "Finds up to three distinct routes between two places, forecasts the weather at each checkpoint for the time the truck gets there, ranks the routes by risk and returns the weather corridor for the 49 hours from departure. Missing weather is not an error: those places are `UNKNOWN` and the `banner` says so.",
+                "summary": "Plan a trip",
+                "tags": [
+                    "plan"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PlanRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlanResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`VALIDATION` (see `field`) or `TOO_CLOSE`."
+                    },
+                    "422": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`NO_ROUTE`: no drivable route between the places."
+                    },
+                    "429": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`RATE_LIMITED`."
+                    },
+                    "502": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_ERROR`: a required service returned an error."
+                    },
+                    "503": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_UNAVAILABLE`: a required service is down."
+                    },
+                    "504": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`UPSTREAM_TIMEOUT`: a required service was too slow."
+                    }
+                }
+            }
+        },
+        "/api/ready": {
+            "get": {
+                "operationId": "ready",
+                "description": "`degraded` when a circuit breaker is not closed or the cache does not answer.",
+                "summary": "Readiness",
+                "tags": [
+                    "ready"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Ready"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "BannerEnum": {
+                "enum": [
+                    "NO_SAFE_ROUTE",
+                    "WEATHER_UNAVAILABLE"
+                ],
+                "type": "string",
+                "description": "* `NO_SAFE_ROUTE` - NO_SAFE_ROUTE\n* `WEATHER_UNAVAILABLE` - WEATHER_UNAVAILABLE"
+            },
+            "Checkpoint": {
+                "type": "object",
+                "description": "A sampled point on a route with the weather expected when the truck gets there.",
+                "properties": {
+                    "index": {
+                        "type": "integer"
+                    },
+                    "mile": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "lon": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "eta": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "wind_mph": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "gust_mph": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "rain_in_hr": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "snow_in_hr": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "level": {
+                        "$ref": "#/components/schemas/RiskLevelEnum"
+                    },
+                    "reasons": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "required": [
+                    "eta",
+                    "gust_mph",
+                    "index",
+                    "lat",
+                    "level",
+                    "lon",
+                    "mile",
+                    "rain_in_hr",
+                    "reasons",
+                    "snow_in_hr",
+                    "wind_mph"
+                ]
+            },
+            "ErrorDetail": {
+                "type": "object",
+                "description": "What went wrong.",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "A stable code such as VALIDATION or NO_ROUTE."
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "field": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Dotted path of the field at fault."
+                    },
+                    "request_id": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "code",
+                    "field",
+                    "message",
+                    "request_id"
+                ]
+            },
+            "ErrorEnvelope": {
+                "type": "object",
+                "description": "The single shape of every error response.",
+                "properties": {
+                    "error": {
+                        "$ref": "#/components/schemas/ErrorDetail"
+                    }
+                },
+                "required": [
+                    "error"
+                ]
+            },
+            "GeocodeResponse": {
+                "type": "object",
+                "description": "Places matching a query, best first.",
+                "properties": {
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Place"
+                        },
+                        "description": "At most 8."
+                    }
+                },
+                "required": [
+                    "results"
+                ]
+            },
+            "Geometry": {
+                "type": "object",
+                "description": "A route line as GeoJSON: [longitude, latitude] pairs.",
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/TypeEnum"
+                    },
+                    "coordinates": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        }
+                    }
+                },
+                "required": [
+                    "coordinates",
+                    "type"
+                ]
+            },
+            "Health": {
+                "type": "object",
+                "description": "Liveness response.",
+                "properties": {
+                    "status": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "status"
+                ]
+            },
+            "Heatmap": {
+                "type": "object",
+                "description": "The weather corridor around the routes over the 49 hours from departure.",
+                "properties": {
+                    "start": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Time of the first frame; frames are hourly."
+                    },
+                    "points": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                                "format": "double"
+                            }
+                        },
+                        "description": "[latitude, longitude] pairs."
+                    },
+                    "frames": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HeatmapFrame"
+                        }
+                    }
+                },
+                "required": [
+                    "frames",
+                    "points",
+                    "start"
+                ]
+            },
+            "HeatmapFrame": {
+                "type": "object",
+                "description": "One hour of the corridor, a value per point (in the order of the points).",
+                "properties": {
+                    "risk": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "maximum": 4,
+                            "minimum": -1
+                        },
+                        "description": "Risk level 0 (LOW) to 4 (NO_TRAVEL); -1 where the weather is unknown."
+                    },
+                    "wind": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "double",
+                            "nullable": true
+                        }
+                    },
+                    "rain": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "double",
+                            "nullable": true
+                        }
+                    },
+                    "snow": {
+                        "type": "array",
+                        "items": {
+                            "type": "number",
+                            "format": "double",
+                            "nullable": true
+                        }
+                    }
+                },
+                "required": [
+                    "rain",
+                    "risk",
+                    "snow",
+                    "wind"
+                ]
+            },
+            "Meta": {
+                "type": "object",
+                "description": "Where the data came from.",
+                "properties": {
+                    "routing_source": {
+                        "type": "string"
+                    },
+                    "weather_source": {
+                        "type": "string"
+                    },
+                    "weather_stale": {
+                        "type": "boolean"
+                    },
+                    "generated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "request_id": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "generated_at",
+                    "request_id",
+                    "routing_source",
+                    "weather_source",
+                    "weather_stale"
+                ]
+            },
+            "NullEnum": {
+                "enum": [
+                    null
+                ]
+            },
+            "Place": {
+                "type": "object",
+                "description": "A place a user can pick.",
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "lat": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "lon": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/PlaceKindEnum"
+                    }
+                },
+                "required": [
+                    "kind",
+                    "label",
+                    "lat",
+                    "lon"
+                ]
+            },
+            "PlaceKindEnum": {
+                "enum": [
+                    "city",
+                    "region",
+                    "country",
+                    "street",
+                    "address",
+                    "place"
+                ],
+                "type": "string",
+                "description": "* `city` - city\n* `region` - region\n* `country` - country\n* `street` - street\n* `address` - address\n* `place` - place"
+            },
+            "PlanRequest": {
+                "type": "object",
+                "description": "The body of ``POST /api/plan``.",
+                "properties": {
+                    "origin": {
+                        "$ref": "#/components/schemas/Point"
+                    },
+                    "destination": {
+                        "$ref": "#/components/schemas/Point"
+                    },
+                    "departure_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "load_lb": {
+                        "type": "integer",
+                        "maximum": 200000,
+                        "minimum": 0
+                    },
+                    "interval_mi": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "departure_at",
+                    "destination",
+                    "interval_mi",
+                    "load_lb",
+                    "origin"
+                ]
+            },
+            "PlanResponse": {
+                "type": "object",
+                "description": "The response of ``POST /api/plan``.",
+                "properties": {
+                    "recommended_route_id": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "recommendation_reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "banner": {
+                        "nullable": true,
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/BannerEnum"
+                            },
+                            {
+                                "$ref": "#/components/schemas/NullEnum"
+                            }
+                        ]
+                    },
+                    "routes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Route"
+                        }
+                    },
+                    "heatmap": {
+                        "$ref": "#/components/schemas/Heatmap"
+                    },
+                    "notes": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/Meta"
+                    }
+                },
+                "required": [
+                    "banner",
+                    "heatmap",
+                    "meta",
+                    "notes",
+                    "recommendation_reason",
+                    "recommended_route_id",
+                    "routes"
+                ]
+            },
+            "Point": {
+                "type": "object",
+                "description": "A place on the map.",
+                "properties": {
+                    "lat": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 90,
+                        "minimum": -90
+                    },
+                    "lon": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 180,
+                        "minimum": -180
+                    },
+                    "label": {
+                        "type": "string",
+                        "default": "",
+                        "maxLength": 200
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lon"
+                ]
+            },
+            "Ready": {
+                "type": "object",
+                "description": "Readiness response.",
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    },
+                    "cache": {
+                        "type": "boolean",
+                        "description": "Whether the cache stores and returns a value."
+                    },
+                    "providers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "enum": [
+                                "closed",
+                                "open",
+                                "half_open"
+                            ],
+                            "type": "string",
+                            "description": "* `closed` - closed\n* `open` - open\n* `half_open` - half_open"
+                        },
+                        "description": "Circuit breaker state of each upstream provider."
+                    }
+                },
+                "required": [
+                    "cache",
+                    "providers",
+                    "status"
+                ]
+            },
+            "RiskLevelEnum": {
+                "enum": [
+                    "UNKNOWN",
+                    "LOW",
+                    "MODERATE",
+                    "HIGH",
+                    "SEVERE",
+                    "NO_TRAVEL"
+                ],
+                "type": "string",
+                "description": "* `UNKNOWN` - UNKNOWN\n* `LOW` - LOW\n* `MODERATE` - MODERATE\n* `HIGH` - HIGH\n* `SEVERE` - SEVERE\n* `NO_TRAVEL` - NO_TRAVEL"
+            },
+            "Route": {
+                "type": "object",
+                "description": "One route, ranked.",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "rank": {
+                        "type": "integer"
+                    },
+                    "distance_mi": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "duration_s": {
+                        "type": "integer"
+                    },
+                    "geometry": {
+                        "$ref": "#/components/schemas/Geometry"
+                    },
+                    "summary": {
+                        "$ref": "#/components/schemas/Summary"
+                    },
+                    "checkpoints": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Checkpoint"
+                        }
+                    }
+                },
+                "required": [
+                    "checkpoints",
+                    "distance_mi",
+                    "duration_s",
+                    "geometry",
+                    "id",
+                    "label",
+                    "rank",
+                    "summary"
+                ]
+            },
+            "StatusEnum": {
+                "enum": [
+                    "ok",
+                    "degraded"
+                ],
+                "type": "string",
+                "description": "* `ok` - ok\n* `degraded` - degraded"
+            },
+            "Summary": {
+                "type": "object",
+                "description": "How risky a route is.",
+                "properties": {
+                    "miles_by_level": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "number",
+                            "format": "double"
+                        },
+                        "description": "Miles at each known risk level; unknown miles are separate."
+                    },
+                    "unknown_miles": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "avg_risk": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true
+                    },
+                    "worst_level": {
+                        "$ref": "#/components/schemas/RiskLevelEnum"
+                    },
+                    "low_confidence": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "avg_risk",
+                    "low_confidence",
+                    "miles_by_level",
+                    "unknown_miles",
+                    "worst_level"
+                ]
+            },
+            "TypeEnum": {
+                "enum": [
+                    "LineString"
+                ],
+                "type": "string",
+                "description": "* `LineString` - LineString"
+            }
+        }
+    }
+}

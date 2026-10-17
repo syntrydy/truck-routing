@@ -120,7 +120,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M4 — Frontend
 
-- [ ] **B-27 feat(web): typed API client** — `type:feat` `area:frontend`
+- [x] **B-27 feat(web): typed API client** — #64 — `type:feat` `area:frontend`
   - Generate types with openapi-typescript (`npm run gen:api` from a checked-in schema file); fetch wrapper with timeout, error envelope parsing, request id surfaced; TanStack Query setup; `/api/health` warm-up on load.
   - AC: tests for error parsing and timeout; generated types committed and CI checks they are up to date.
 
