@@ -24,7 +24,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Vite + React 18 + TS strict (`noUncheckedIndexedAccess`), eslint flat config (typescript-eslint strict-type-checked, react-hooks, jsx-a11y), prettier, vitest + Testing Library. Makefile targets `fe-lint`, `fe-type`, `fe-test`, `fe-build` wired into `check`.
   - AC: `make check` green; sample component test passes.
 
-- [ ] **B-05 ci: GitHub Actions, CodeQL and Dependabot** — `type:chore` `area:infra`
+- [x] **B-05 ci: GitHub Actions, CodeQL and Dependabot — #9** — `type:chore` `area:infra`
   - Workflow on PR + push to main: backend job (uv sync --frozen, ruff check, ruff format --check, mypy, pytest with coverage gate, bandit, pip-audit, `manage.py check --deploy` with prod-like env); frontend job (npm ci, typecheck, eslint, vitest, build, `npm audit --audit-level=high`); gitleaks job. CodeQL workflow (python, javascript-typescript). `dependabot.yml` weekly for pip/uv, npm, github-actions. Concurrency group cancels superseded runs. Actions pinned to major versions.
   - AC: CI green on this PR; failing lint demonstrably fails the job (verified then reverted locally).
 
