@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import Any
 
 import httpx
 import pytest
@@ -11,7 +12,12 @@ from planner.infra.errors import (
     UpstreamTimeout,
     UpstreamUnavailable,
 )
-from planner.infra.http import ProviderPolicy, UpstreamClient, default_policies
+from planner.infra.http import (
+    ProviderPolicy,
+    UpstreamClient,
+    default_policies,
+    upstream_client_from_settings,
+)
 from planner.infra.resilience import Deadline, deadline_scope
 from tests.infra.fakes import FakeClock, FixedJitter
 
@@ -172,6 +178,28 @@ class TestTimeouts:
                 client.get("osrm", OSRM_URL, deadline=spent)
 
         assert client.get("osrm", OSRM_URL).json() == OK
+
+    def test_a_sleep_that_overshoots_the_budget_ends_with_the_last_failure(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.get(OSRM_URL).respond(503)
+
+        def slow_sleep(seconds: float) -> None:
+            clock.advance(seconds + 5.0)  # the real sleep took far longer than asked
+
+        client = UpstreamClient(
+            [ProviderPolicy("osrm", timeout_s=8.0, max_concurrency=1)],
+            ALLOWED,
+            USER_AGENT,
+            clock=clock,
+            sleep=slow_sleep,
+            jitter=FixedJitter(1.0),
+        )
+
+        with pytest.raises(UpstreamUnavailable, match="503"):
+            client.get("osrm", OSRM_URL, deadline=Deadline(1.0, clock))
+
+        assert route.call_count == 1
 
     def test_no_time_to_back_off_gives_up_with_the_last_failure(
         self, api: respx.MockRouter, clock: FakeClock
@@ -474,6 +502,7 @@ class TestHostAllowlist:
             "http://router.project-osrm.org/route",
             "ftp://router.project-osrm.org/route",
             "https://[not-a-host/route",
+            "https://router.project-osrm.org:notaport/route",
             "/relative/path",
         ],
         ids=[
@@ -484,6 +513,7 @@ class TestHostAllowlist:
             "plain-http",
             "other-scheme",
             "invalid-url",
+            "invalid-port",
             "relative",
         ],
     )
@@ -558,3 +588,31 @@ class TestDefaultPolicies:
         assert {p.failure_threshold for p in policies.values()} == {3}
         assert {p.reset_after_s for p in policies.values()} == {60.0}
         assert {p.backoff_base_s for p in policies.values()} == {0.3}
+
+
+class TestFromSettings:
+    def test_uses_the_configured_user_agent_and_allowlist(
+        self, api: respx.MockRouter, settings: Any
+    ) -> None:
+        settings.UPSTREAM_USER_AGENT = "ConfiguredAgent/9"
+        settings.UPSTREAM_ALLOWED_HOSTS = ["router.project-osrm.org"]
+        route = api.get(OSRM_URL).respond(200, json=OK)
+        client = upstream_client_from_settings()
+
+        client.get("osrm", OSRM_URL)
+
+        assert route.calls.last.request.headers["User-Agent"] == "ConfiguredAgent/9"
+        with pytest.raises(HostNotAllowed):
+            client.get("open-meteo", WEATHER_URL)
+
+    def test_the_default_allowlist_covers_every_provider_and_nothing_else(
+        self, settings: Any
+    ) -> None:
+        assert sorted(settings.UPSTREAM_ALLOWED_HOSTS) == [
+            "api.open-meteo.com",
+            "api.openrouteservice.org",
+            "nominatim.openstreetmap.org",
+            "photon.komoot.io",
+            "router.project-osrm.org",
+        ]
+        assert "github.com/syntrydy/truck-routing" in settings.UPSTREAM_USER_AGENT

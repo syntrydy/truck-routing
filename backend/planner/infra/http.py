@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 import httpx
+from django.conf import settings
 
 from planner.infra.errors import (
     HostNotAllowed,
@@ -262,3 +263,12 @@ def _call_timeout(policy: ProviderPolicy, deadline: Deadline | None) -> float | 
     if remaining <= 0.0:
         return None
     return min(policy.timeout_s, remaining)
+
+
+def upstream_client_from_settings() -> UpstreamClient:
+    """Build the client from ``UPSTREAM_USER_AGENT`` and ``UPSTREAM_ALLOWED_HOSTS``."""
+    return UpstreamClient(
+        default_policies(),
+        settings.UPSTREAM_ALLOWED_HOSTS,
+        settings.UPSTREAM_USER_AGENT,
+    )
