@@ -140,7 +140,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Rank badge, duration, distance, stacked miles-by-level bar with text labels, reason, low-confidence badge, banners (NO_SAFE_ROUTE, WEATHER_UNAVAILABLE, notes).
   - AC: tests for each banner; bar has accessible text equivalent.
 
-- [ ] **B-32 feat(web): corridor heatmap with forecast slider** — `type:feat` `area:frontend`
+- [x] **B-32 feat(web): corridor heatmap with forecast slider** — #74 — `type:feat` `area:frontend`
   - Frames precomputed with `useMemo`, `setData` on slider change via rAF, play/pause, keyboard, variable toggle, unknown cells grey, zoom fade to circles, truck marker on selected route at slider hour.
   - AC: frame builder unit-tested; slider interaction test; manual perf check recorded in PR (fps from Performance panel).
 
