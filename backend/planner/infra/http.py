@@ -64,8 +64,11 @@ WEATHER_TIMEOUT_S = 10.0
 GEOCODE_TIMEOUT_S = 4.0
 # The public OSRM server allows about one request per second; keep a margin.
 OSRM_MIN_SPACING_S = 1.1
+# The public Nominatim server also allows one request per second.
+NOMINATIM_MIN_SPACING_S = 1.1
 # Shared by every client in the process, so all workers' threads take turns.
 _OSRM_SPACING = MinSpacing(OSRM_MIN_SPACING_S, "osrm")
+_NOMINATIM_SPACING = MinSpacing(NOMINATIM_MIN_SPACING_S, "nominatim")
 
 
 def _decode(provider: str, response: httpx.Response) -> Any:  # noqa: ANN401
@@ -329,5 +332,5 @@ def upstream_client_from_settings() -> UpstreamClient:
         default_policies(),
         settings.UPSTREAM_ALLOWED_HOSTS,
         settings.UPSTREAM_USER_AGENT,
-        gates={"osrm": _OSRM_SPACING},
+        gates={"osrm": _OSRM_SPACING, "nominatim": _NOMINATIM_SPACING},
     )

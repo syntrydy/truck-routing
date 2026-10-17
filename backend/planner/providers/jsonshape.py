@@ -56,6 +56,31 @@ class JsonShape:
     def optional_integer(self, value: object, what: str) -> int | None:
         return None if value is None else self.integer(value, what)
 
+    def decimal(self, value: object, what: str) -> float:
+        """A number sent as a JSON number or as text, as Nominatim sends coordinates."""
+        if isinstance(value, str):
+            try:
+                value = float(value)
+            except ValueError as error:
+                raise self.error(f"{what} is not a number") from error
+        return self.number(value, what, allow_negative=True)
+
+    def position(self, lat: object, lon: object) -> LatLon:
+        """A latitude and longitude sent separately (as numbers or text), range-checked."""
+        latitude, longitude = self.decimal(lat, "latitude"), self.decimal(lon, "longitude")
+        try:
+            return LatLon(latitude, longitude)
+        except ValueError as error:
+            raise self.error(f"coordinate out of range: {error}") from error
+
+    def optional_text(self, value: object, what: str) -> str | None:
+        """A trimmed non-empty string, or ``None`` when the provider left the field out."""
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise self.error(f"{what} is not text")
+        return value.strip() or None
+
     def numbers(self, value: object, what: str) -> list[float]:
         return [self.number(item, what) for item in self.sequence(value, what)]
 

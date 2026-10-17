@@ -3,6 +3,7 @@
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
+from enum import StrEnum
 from typing import Protocol
 
 from planner.domain.models import HourlySeries, LatLon
@@ -89,5 +90,59 @@ class WeatherProvider(Protocol):
 
         An outage degrades to missing places rather than raising; a response that breaks the
         agreed units or shape raises ``UpstreamContractError``.
+        """
+        ...
+
+
+MIN_QUERY_LENGTH = 3
+MAX_QUERY_LENGTH = 100
+MAX_RESULTS = 8
+
+
+class PlaceKind(StrEnum):
+    """What a geocoded place is, in terms the UI can show an icon for."""
+
+    CITY = "city"
+    REGION = "region"
+    COUNTRY = "country"
+    STREET = "street"
+    ADDRESS = "address"
+    PLACE = "place"
+
+
+@dataclass(frozen=True, slots=True)
+class Place:
+    """A place a user can pick as origin or destination."""
+
+    label: str
+    lat: float
+    lon: float
+    kind: PlaceKind
+
+    def __post_init__(self) -> None:
+        LatLon(self.lat, self.lon)  # raises ValueError for coordinates out of range
+        if not self.label:
+            msg = "a place needs a label"
+            raise ValueError(msg)
+
+
+def normalize_query(query: str) -> str:
+    """The query with whitespace collapsed, checked to be 3 to 100 characters long."""
+    cleaned = " ".join(query.split())
+    if not MIN_QUERY_LENGTH <= len(cleaned) <= MAX_QUERY_LENGTH:
+        msg = f"query must be {MIN_QUERY_LENGTH} to {MAX_QUERY_LENGTH} characters"
+        raise ValueError(msg)
+    return cleaned
+
+
+class GeocodeProvider(Protocol):
+    """A source of places matching a text query."""
+
+    name: str
+
+    def search(self, query: str) -> tuple[Place, ...]:
+        """Up to ``MAX_RESULTS`` places for ``query``; no match is an empty tuple.
+
+        Raises ``ValueError`` for a query that is too short or too long.
         """
         ...

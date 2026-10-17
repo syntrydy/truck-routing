@@ -806,6 +806,19 @@ class TestPostAndHeaders:
         assert sentinel not in repr(raised.value)
         assert sentinel not in (raised.value.body or "")
 
+    def test_the_settings_client_also_spaces_nominatim_requests_process_wide(
+        self, settings: Any
+    ) -> None:
+        settings.UPSTREAM_ALLOWED_HOSTS = ["nominatim.openstreetmap.org"]
+
+        first, second = upstream_client_from_settings(), upstream_client_from_settings()
+
+        gate = first._gates["nominatim"]  # noqa: SLF001
+        assert gate is second._gates["nominatim"]  # noqa: SLF001
+        assert isinstance(gate, MinSpacing)
+        assert gate.spacing_s == 1.1
+        assert gate is not first._gates["osrm"]  # noqa: SLF001 - each provider has its own turn
+
 
 class TestFromSettings:
     def test_uses_the_configured_user_agent_and_allowlist(
