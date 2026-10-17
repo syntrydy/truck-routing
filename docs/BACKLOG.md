@@ -20,7 +20,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - ruff (rules: E, F, W, I, B, UP, S, SIM, RET, PL, PT, N, C4, DTZ, ERA), ruff format, mypy (strict for `planner.domain` and `planner.providers`), pytest + pytest-django + pytest-cov + respx + hypothesis, bandit, pip-audit. Root `Makefile` targets: `be-lint`, `be-type`, `be-test`, `be-sec`, `check`.
   - AC: `make check` green on the empty project; coverage report generated.
 
-- [ ] **B-04 chore(frontend): Vite React TS scaffold with strict linting** — `type:chore` `area:frontend`
+- [x] **B-04 chore(frontend): Vite React TS scaffold with strict linting — #7** — `type:chore` `area:frontend`
   - Vite + React 18 + TS strict (`noUncheckedIndexedAccess`), eslint flat config (typescript-eslint strict-type-checked, react-hooks, jsx-a11y), prettier, vitest + Testing Library. Makefile targets `fe-lint`, `fe-type`, `fe-test`, `fe-build` wired into `check`.
   - AC: `make check` green; sample component test passes.
 
