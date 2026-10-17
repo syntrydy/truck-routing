@@ -56,6 +56,14 @@ class JsonShape:
     def optional_integer(self, value: object, what: str) -> int | None:
         return None if value is None else self.integer(value, what)
 
+    def optional_text(self, value: object, what: str) -> str | None:
+        """A trimmed non-empty string, or ``None`` when the provider left the field out."""
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise self.error(f"{what} is not text")
+        return value.strip() or None
+
     def numbers(self, value: object, what: str) -> list[float]:
         return [self.number(item, what) for item in self.sequence(value, what)]
 
