@@ -1,8 +1,20 @@
+import dataclasses
+from datetime import UTC, datetime
+
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from planner.domain.models import RiskLevel, is_known, max_known
+from planner.domain.models import (
+    Checkpoint,
+    LatLon,
+    RiskLevel,
+    RouteScore,
+    Stretch,
+    WeatherSample,
+    is_known,
+    max_known,
+)
 
 KNOWN_LEVELS = [
     RiskLevel.LOW,
@@ -64,3 +76,91 @@ class TestMaxKnown:
         known = [level for level in levels if level is not RiskLevel.UNKNOWN]
         expected = max(known) if known else RiskLevel.UNKNOWN
         assert max_known(levels) is expected
+
+
+class TestLatLon:
+    @pytest.mark.parametrize(
+        ("lat", "lon"),
+        [(0.0, 0.0), (39.7392, -104.9903), (90.0, 180.0), (-90.0, -180.0)],
+    )
+    def test_accepts_valid_coordinates(self, lat: float, lon: float) -> None:
+        point = LatLon(lat, lon)
+
+        assert (point.lat, point.lon) == (lat, lon)
+
+    @pytest.mark.parametrize(
+        ("lat", "lon"),
+        [(90.0001, 0.0), (-90.0001, 0.0), (0.0, 180.0001), (0.0, -180.0001)],
+    )
+    def test_rejects_out_of_range_coordinates(self, lat: float, lon: float) -> None:
+        with pytest.raises(ValueError, match="outside"):
+            LatLon(lat, lon)
+
+    def test_is_immutable(self) -> None:
+        point = LatLon(1.0, 2.0)
+
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            point.lat = 3.0  # type: ignore[misc]
+
+    def test_equal_coordinates_compare_equal(self) -> None:
+        assert LatLon(1.0, 2.0) == LatLon(1.0, 2.0)
+
+
+class TestWeatherSample:
+    def test_defaults_to_all_values_unavailable(self) -> None:
+        sample = WeatherSample()
+
+        assert sample == WeatherSample(None, None, None, None, None)
+
+
+class TestCheckpoint:
+    def test_defaults_to_unknown_level_without_weather(self) -> None:
+        checkpoint = Checkpoint(
+            index=0,
+            location=LatLon(40.0, -105.0),
+            distance_mi=0.0,
+            eta=datetime(2026, 1, 1, 12, tzinfo=UTC),
+        )
+
+        assert checkpoint.level is RiskLevel.UNKNOWN
+        assert checkpoint.weather is None
+        assert checkpoint.reasons == ()
+
+    def test_rejects_naive_eta(self) -> None:
+        with pytest.raises(ValueError, match="timezone-aware"):
+            Checkpoint(
+                index=0,
+                location=LatLon(40.0, -105.0),
+                distance_mi=0.0,
+                eta=datetime(2026, 1, 1, 12),  # noqa: DTZ001 - the naive value is the test input
+            )
+
+    def test_is_immutable(self) -> None:
+        checkpoint = Checkpoint(0, LatLon(40.0, -105.0), 0.0, datetime(2026, 1, 1, tzinfo=UTC))
+
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            checkpoint.level = RiskLevel.LOW  # type: ignore[misc]
+
+
+class TestStretchAndRouteScore:
+    def test_stretch_holds_its_values(self) -> None:
+        stretch = Stretch(start_index=0, end_index=1, length_mi=25.0, level=RiskLevel.HIGH)
+
+        assert (stretch.start_index, stretch.end_index) == (0, 1)
+        assert stretch.length_mi == 25.0
+        assert stretch.level is RiskLevel.HIGH
+
+    def test_route_score_defaults_do_not_claim_any_risk_level(self) -> None:
+        score = RouteScore(distance_mi=100.0, duration_s=6000.0)
+
+        assert score.miles_by_level == {}
+        assert score.unknown_miles == 0.0
+        assert score.avg_risk is None
+        assert score.worst_level is RiskLevel.UNKNOWN
+        assert not score.low_confidence
+
+    def test_route_score_default_mappings_are_not_shared(self) -> None:
+        first = RouteScore(distance_mi=1.0, duration_s=1.0)
+        second = RouteScore(distance_mi=1.0, duration_s=1.0)
+
+        assert first.miles_by_level is not second.miles_by_level
