@@ -10,6 +10,8 @@ export default defineConfig({
   server: { proxy: { "/api": "http://localhost:8000" } },
   test: {
     environment: "jsdom",
+    // Times in tests are read in one fixed zone, so that results do not depend on the machine.
+    env: { TZ: "America/Chicago" },
     setupFiles: ["./src/test/setup.ts"],
     css: false,
   },

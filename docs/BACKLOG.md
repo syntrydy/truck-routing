@@ -128,7 +128,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Layout (panel + map + slider slot), MapLibre lazy-loaded, OpenFreeMap style, attribution control, `useMap` hook creating the map once.
   - AC: map renders; no re-creation on state change (test or dev assertion); attribution visible.
 
-- [ ] **B-29 feat(web): trip form with place autocomplete** — `type:feat` `area:frontend`
+- [x] **B-29 feat(web): trip form with place autocomplete** — #68 — `type:feat` `area:frontend`
   - `PlaceInput` (debounced 300 ms, keyboard navigable combobox, aria), datetime-local with timezone label, load input, interval segmented control, client validation mirroring the API, stale-inputs detection.
   - AC: component tests for debounce, keyboard selection, validation messages; axe check passes.
 
