@@ -1,9 +1,139 @@
-"""Serializers for the public API."""
+"""Serializers: strict request validation and the shape of the API, for the OpenAPI schema."""
+
+from collections.abc import Mapping
+from datetime import datetime, timedelta
+from typing import Any
 
 from rest_framework import serializers
+
+from planner.domain.models import LatLon
+from planner.services.models import ALLOWED_INTERVALS_MI, PlanRequest
+
+MAX_LABEL_LENGTH = 200
+MAX_LOAD_LB = 200_000
+PAST_GRACE = timedelta(minutes=15)
+MAX_LEAD = timedelta(days=7)
 
 
 class HealthSerializer(serializers.Serializer[dict[str, str]]):
     """Liveness response."""
 
     status = serializers.CharField()
+
+
+class StrictSerializer(serializers.Serializer[Any]):
+    """A serializer that refuses fields it does not know, so typos are not silently ignored."""
+
+    def to_internal_value(self, data: Any) -> Any:  # noqa: ANN401
+        if isinstance(data, Mapping):
+            unknown = [str(key) for key in data if key not in self.fields]
+            if unknown:
+                raise serializers.ValidationError({name: ["Unknown field."] for name in unknown})
+        return super().to_internal_value(data)
+
+
+class StrictFloatField(serializers.FloatField):
+    """A JSON number. Numeric strings and booleans are not numbers."""
+
+    def to_internal_value(self, data: Any) -> float:  # noqa: ANN401
+        if isinstance(data, bool) or not isinstance(data, int | float):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class StrictCharField(serializers.CharField):
+    """A JSON string. Numbers are not silently turned into text."""
+
+    def to_internal_value(self, data: Any) -> str:  # noqa: ANN401
+        if not isinstance(data, str):
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class StrictIntegerField(serializers.IntegerField):
+    """A JSON integer. Strings, booleans and floats (even 5.0) are not integers."""
+
+    default_error_messages = {"invalid": "A whole number is required."}  # noqa: RUF012
+
+    def to_internal_value(self, data: Any) -> int:  # noqa: ANN401
+        if not isinstance(data, int):  # DRF's IntegerField itself refuses True and False
+            self.fail("invalid")
+        return super().to_internal_value(data)
+
+
+class OffsetDateTimeField(serializers.Field[datetime, str, str, Any]):
+    """An ISO 8601 date and time that states its UTC offset (``Z`` or ``+hh:mm``)."""
+
+    default_error_messages = {  # noqa: RUF012
+        "invalid": "Use an ISO 8601 date and time, for example 2026-10-18T06:00:00-05:00.",
+        "no_offset": "The time must include a UTC offset, for example 2026-10-18T06:00:00-05:00.",
+    }
+
+    def to_internal_value(self, data: Any) -> datetime:  # noqa: ANN401
+        if not isinstance(data, str):
+            self.fail("invalid")
+        try:
+            value = datetime.fromisoformat(data)
+        except ValueError:
+            self.fail("invalid")
+        if value.tzinfo is None or value.utcoffset() is None:
+            self.fail("no_offset")
+        return value
+
+    def to_representation(self, value: datetime) -> str:
+        return value.isoformat()
+
+
+class PointSerializer(StrictSerializer):
+    """A place on the map."""
+
+    lat = StrictFloatField(min_value=-90, max_value=90)
+    lon = StrictFloatField(min_value=-180, max_value=180)
+    # DRF removes declared fields from the class, so "label" does not clash with Field.label
+    # at runtime; only the type stubs see a conflict.
+    label = StrictCharField(  # type: ignore[assignment]
+        max_length=MAX_LABEL_LENGTH, required=False, allow_blank=True, default=""
+    )
+
+
+def _one_of_the_intervals(value: int) -> None:
+    if value not in ALLOWED_INTERVALS_MI:
+        choices = ", ".join(str(choice) for choice in ALLOWED_INTERVALS_MI)
+        raise serializers.ValidationError(f"Must be one of {choices}.")
+
+
+class PlanRequestSerializer(StrictSerializer):
+    """The body of ``POST /api/plan``."""
+
+    origin = PointSerializer()
+    destination = PointSerializer()
+    departure_at = OffsetDateTimeField()
+    load_lb = StrictIntegerField(min_value=0, max_value=MAX_LOAD_LB)
+    interval_mi = StrictIntegerField(validators=[_one_of_the_intervals])
+
+    def validate_departure_at(self, value: datetime) -> datetime:
+        """The departure must be within [now - 15 min, now + 7 days]; slightly past means now."""
+        now: datetime = self.context["now"]
+        if value < now - PAST_GRACE:
+            raise serializers.ValidationError("The departure time is in the past.")
+        if value > now + MAX_LEAD:
+            raise serializers.ValidationError("The departure time must be within the next 7 days.")
+        return max(value, now)
+
+
+def parse_plan_request(data: Any, now: datetime) -> PlanRequest:  # noqa: ANN401
+    """Validate a request body and turn it into a ``PlanRequest``.
+
+    Raises DRF's ``ValidationError`` (which the error handler turns into a 400) for any rule
+    broken. ``now`` is passed in so that the departure window is testable.
+    """
+    serializer = PlanRequestSerializer(data=data, context={"now": now})
+    serializer.is_valid(raise_exception=True)
+    valid = serializer.validated_data
+    return PlanRequest(
+        origin=LatLon(valid["origin"]["lat"], valid["origin"]["lon"]),
+        destination=LatLon(valid["destination"]["lat"], valid["destination"]["lon"]),
+        departure=valid["departure_at"],
+        load_lb=valid["load_lb"],
+        interval_mi=valid["interval_mi"],
+    )
