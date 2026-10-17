@@ -8,7 +8,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M0 — Foundations
 
-- [ ] **B-01 chore: scaffold monorepo layout** — `type:chore` `area:infra`
+- [x] **B-01 chore: scaffold monorepo layout — #1** — `type:chore` `area:infra`
   - Create `backend/`, `frontend/`, `docs/`, `.github/`; MIT `LICENSE`; `.editorconfig`; `.gitignore` (Python, Node, env files, OS junk); `README.md` skeleton (title, one-line pitch, sections to fill later).
   - AC: tree matches SPEC §10 top level; `.env*` ignored except `.env.example`.
 
