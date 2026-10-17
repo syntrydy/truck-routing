@@ -34,7 +34,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M1 — Domain (pure, no I/O)
 
-- [ ] **B-07 feat(domain): value objects and risk levels** — `type:feat` `area:backend`
+- [x] **B-07 feat(domain): value objects and risk levels — #15** — `type:feat` `area:backend`
   - `domain/models.py`: frozen dataclasses `LatLon`, `WeatherSample`, `Checkpoint`, `Stretch`, `RouteScore`; `RiskLevel` IntEnum + `UNKNOWN` sentinel handling helpers (`max_known`, `is_known`).
   - AC: mypy strict clean; unit tests for ordering and UNKNOWN semantics.
 
