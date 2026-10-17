@@ -20,6 +20,9 @@ updates:
       # typescript-eslint requires TypeScript below 6.1, so TypeScript 7 cannot be linted yet.
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # jsdom 30 needs Node 22.22.2 or newer; the tests must keep running on Node 20 and early 22.
+      - dependency-name: jsdom
+        update-types: ["version-update:semver-major"]
     groups:
       npm-dependencies:
         patterns: ["*"]
