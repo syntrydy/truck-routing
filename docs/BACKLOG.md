@@ -50,7 +50,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/geometry.py`: haversine, cumulative distances, point-at-distance interpolation, bearing, perpendicular offset, Douglas-Peucker simplification (tolerance in meters), point-to-polyline distance.
   - AC: tests against known distances (±0.5%); simplification keeps endpoints; property test: interpolated point distance monotonic.
 
-- [ ] **B-11 feat(domain): checkpoint sampling with truck ETAs** — `type:feat` `area:backend`
+- [x] **B-11 feat(domain): checkpoint sampling with truck ETAs — #23** — `type:feat` `area:backend`
   - `domain/sampling.py`: apply truck speed cap per segment; sample at interval incl. destination; ETA interpolation; stretch lengths.
   - AC: trip shorter than interval → 2 checkpoints; destination always last; ETAs strictly increasing; speed cap test (fast segment slowed, slow segment untouched).
 
