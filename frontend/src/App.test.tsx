@@ -90,6 +90,72 @@ describe("App", () => {
     expect(map?.fitBounds).toHaveBeenCalledTimes(1);
   });
 
+  it("lists the routes and lets a card choose the route drawn as selected", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    await waitFor(() => {
+      expect(fake.maps[0]?.layers).toHaveLength(3);
+    });
+    const map = fake.maps[0];
+    for (const [name, typed] of [
+      ["From", "chicago"],
+      ["To", "denver"],
+    ] as const) {
+      await user.type(screen.getByRole("combobox", { name }), typed);
+      await screen.findByRole("option");
+      await user.keyboard("{ArrowDown}{Enter}");
+    }
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    const first = await screen.findByRole("button", { name: "Route R1" });
+    expect(first).toHaveAttribute("aria-pressed", "true"); // the recommended route to begin with
+    const emphasis = () =>
+      (
+        map?.sources.get("routes")?.data as {
+          features: { properties: { id: string; emphasis: string } }[];
+        }
+      ).features.map((feature) => `${feature.properties.id}:${feature.properties.emphasis}`);
+    await waitFor(() => {
+      expect(emphasis()).toEqual(["r1:selected", "r2:normal"]);
+    });
+
+    await user.click(screen.getByRole("button", { name: "Route R2" }));
+
+    expect(screen.getByRole("button", { name: "Route R2" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await waitFor(() => {
+      expect(emphasis()).toEqual(["r1:normal", "r2:selected"]);
+    });
+  });
+
+  it("highlights the card of the route the pointer is over on the map", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    await waitFor(() => {
+      expect(fake.maps[0]?.layers).toHaveLength(3);
+    });
+    for (const [name, typed] of [
+      ["From", "chicago"],
+      ["To", "denver"],
+    ] as const) {
+      await user.type(screen.getByRole("combobox", { name }), typed);
+      await screen.findByRole("option");
+      await user.keyboard("{ArrowDown}{Enter}");
+    }
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+    await screen.findByRole("button", { name: "Route R2" });
+
+    act(() => {
+      fake.maps[0]?.emit("mousemove", "routes-line", { features: [{ properties: { id: "r2" } }] });
+    });
+
+    expect(screen.getByRole("button", { name: "Route R2" }).closest("li")).toHaveClass(
+      "route-card--hovered",
+    );
+  });
+
   it("shows why a trip could not be planned", async () => {
     const { ApiError } = await import("./api/errors.ts");
     const plan = vi.fn<ApiClient["plan"]>(() =>

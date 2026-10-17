@@ -3,7 +3,9 @@ import { useState } from "react";
 import type { PlanRequest } from "./api/types.ts";
 import { useWarmUp } from "./api/useWarmUp.ts";
 import { AppShell } from "./components/AppShell.tsx";
+import { PlanBanners } from "./components/PlanBanners.tsx";
 import { PlanStatus } from "./components/PlanStatus.tsx";
+import { RouteCards } from "./components/RouteCards.tsx";
 import { TripForm } from "./components/TripForm.tsx";
 import { usePlan } from "./hooks/usePlan.ts";
 import { MapView } from "./map/MapView.tsx";
@@ -36,6 +38,18 @@ export function App() {
             }}
           />
           <PlanStatus pending={plan.isPending} error={plan.error} />
+          {plan.data !== undefined && (
+            <>
+              <PlanBanners plan={plan.data} />
+              <RouteCards
+                plan={plan.data}
+                selectedId={selectedId}
+                hoveredId={hoveredId}
+                onSelect={setChosenId}
+                onHover={setHoveredId}
+              />
+            </>
+          )}
         </>
       }
       map={

@@ -136,7 +136,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Route line layers (recommended emphasized), single checkpoint source with data-driven colors, popups with ETA/weather/reasons, fit bounds after plan, hover/select sync with cards.
   - AC: layer data built in pure functions with unit tests; popup content test.
 
-- [ ] **B-31 feat(web): route cards and banners** — `type:feat` `area:frontend`
+- [x] **B-31 feat(web): route cards and banners** — #72 — `type:feat` `area:frontend`
   - Rank badge, duration, distance, stacked miles-by-level bar with text labels, reason, low-confidence badge, banners (NO_SAFE_ROUTE, WEATHER_UNAVAILABLE, notes).
   - AC: tests for each banner; bar has accessible text equivalent.
 
