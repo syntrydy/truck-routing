@@ -142,6 +142,11 @@ class TestRainRate:
 
         assert sample.rain_in_hr == pytest.approx(0.11)
 
+    def test_the_rain_sum_keeps_four_decimals(self) -> None:
+        precise = series(rain_in=(0.0003,) * HOURS, showers_in=(0.0001,) * HOURS)
+
+        assert select_weather(precise, at(13)).rain_in_hr == 0.0004
+
     def test_float_noise_does_not_push_the_sum_below_a_band_edge(self) -> None:
         noisy = series(rain_in=(0.01,) * HOURS, showers_in=(0.09,) * HOURS)
 
