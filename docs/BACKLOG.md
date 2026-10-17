@@ -38,7 +38,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/models.py`: frozen dataclasses `LatLon`, `WeatherSample`, `Checkpoint`, `Stretch`, `RouteScore`; `RiskLevel` IntEnum + `UNKNOWN` sentinel handling helpers (`max_known`, `is_known`).
   - AC: mypy strict clean; unit tests for ordering and UNKNOWN semantics.
 
-- [ ] **B-08 feat(domain): weather band classification** — `type:feat` `area:backend`
+- [x] **B-08 feat(domain): weather band classification — #17** — `type:feat` `area:backend`
   - `domain/risk.py`: band tables as data; `classify_wind`, `classify_rain`, `classify_snow` per SPEC §4.5 boundaries; `None` → UNKNOWN.
   - AC: parameterized tests at every edge (e.g. 24.99/25, 34.99/35, 0.0999/0.10, 1.00/1.0001, 2.99/3.0/3.0001); hypothesis test that classification is monotonic non-decreasing.
 
