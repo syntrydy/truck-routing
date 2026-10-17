@@ -125,5 +125,7 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "RiskLevelEnum": "planner.api.serializers.LEVELS",
         "BannerEnum": "planner.api.serializers.BANNERS",
+        "PlaceKindEnum": "planner.api.serializers.PLACE_KINDS",
+        "BreakerStateEnum": "planner.api.serializers.BREAKER_STATES",
     },
 }

@@ -410,3 +410,41 @@ class TestKeys:
         assert len(key) < 80
         assert key.isascii()
         assert not any(char.isspace() for char in key)
+
+
+class TestReachability:
+    def test_a_working_backend_is_reachable(self, backend: LocMemCache) -> None:
+        assert StaleIfErrorCache(backend).is_reachable() is True
+
+    def test_the_probe_is_a_short_lived_key_of_its_own(self) -> None:
+        recording = RecordingBackend()
+        recording.get = lambda key, default=None: recording.sets[-1]["value"]  # type: ignore[method-assign]
+
+        assert StaleIfErrorCache(recording).is_reachable() is True  # type: ignore[arg-type]
+
+        (written,) = recording.sets
+        assert written["key"] == "truck:v1:probe"
+        assert written["timeout"] == 10
+
+    def test_every_probe_writes_a_fresh_value(self, backend: LocMemCache) -> None:
+        cache = StaleIfErrorCache(backend)
+        cache.is_reachable()
+        first = backend.get("truck:v1:probe")
+        cache.is_reachable()
+
+        assert backend.get("truck:v1:probe") != first
+
+    def test_a_backend_that_raises_is_not_reachable(self) -> None:
+        assert StaleIfErrorCache(BrokenBackend()).is_reachable() is False  # type: ignore[arg-type]
+
+    def test_a_backend_that_forgets_is_not_reachable(self) -> None:
+        assert StaleIfErrorCache(RecordingBackend()).is_reachable() is False  # type: ignore[arg-type]
+
+    def test_a_backend_that_returns_another_value_is_not_reachable(
+        self, backend: LocMemCache
+    ) -> None:
+        class Stale(LocMemCache):
+            def get(self, key: str, default: object = None, version: object = None) -> object:
+                return "an older value"
+
+        assert StaleIfErrorCache(Stale("stale", {})).is_reachable() is False

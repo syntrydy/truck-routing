@@ -9,6 +9,7 @@ disposable: if the backend itself fails, calls simply behave as if it were empty
 import hashlib
 import logging
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
@@ -25,6 +26,8 @@ KEY_PREFIX = "truck:v1"
 ROUTE_DECIMALS = 3
 WEATHER_DECIMALS = 1
 GEOCODE_KEY_LENGTH = 32
+PROBE_KEY = f"{KEY_PREFIX}:probe"
+PROBE_TTL_S = 10
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +80,16 @@ class StaleIfErrorCache:
             raise
         self._write(key, value, timeout_s=max_stale_age_s)
         return CacheResult(value)
+
+    def is_reachable(self) -> bool:
+        """Whether the backend stores and returns a value right now."""
+        token = uuid.uuid4().hex
+        try:
+            self._backend.set(PROBE_KEY, token, timeout=PROBE_TTL_S)
+            return bool(self._backend.get(PROBE_KEY) == token)
+        except Exception:
+            logger.warning("cache probe failed", exc_info=True)
+            return False
 
     def peek(self, key: str) -> CachedEntry[Any] | None:
         """The cached entry and its age, whether fresh or not; ``None`` on a miss.

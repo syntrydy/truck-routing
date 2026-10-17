@@ -24,7 +24,14 @@ from planner.infra.errors import (
     UpstreamUnavailable,
     UpstreamWaitTimeout,
 )
-from planner.infra.resilience import CircuitBreaker, Clock, Deadline, MinSpacing, current_deadline
+from planner.infra.resilience import (
+    BreakerState,
+    CircuitBreaker,
+    Clock,
+    Deadline,
+    MinSpacing,
+    current_deadline,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +137,10 @@ class UpstreamClient:
         self._http = http_client or httpx.Client(follow_redirects=False)
         self._sleep = sleep
         self._jitter: Jitter = jitter or random.Random()  # noqa: S311  # nosec B311 - backoff jitter, not security
+
+    def breaker_states(self) -> dict[str, BreakerState]:
+        """The circuit breaker state of every provider. Makes no request."""
+        return {name: state.breaker.state for name, state in self._providers.items()}
 
     def close(self) -> None:
         """Release the connection pool."""

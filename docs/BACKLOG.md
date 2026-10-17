@@ -110,7 +110,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - DRF serializers per SPEC §5, error envelope, status mapping, drf-spectacular annotations, response compaction (geometry simplified, floats rounded).
   - AC: API tests for each validation rule and each error code; schema contains request/response components; payload for fixture trip ≤ 300 KB gzipped.
 
-- [ ] **B-25 feat(api): geocode endpoint, readiness and rate limiting** — `type:feat` `area:backend`
+- [x] **B-25 feat(api): geocode endpoint, readiness and rate limiting** — `type:feat` `area:backend`
   - `GET /api/geocode`, `GET /api/ready`, django-ratelimit on plan and geocode with JSON 429.
   - AC: tests for min/max query length, 429 envelope, ready reports breaker states.
 

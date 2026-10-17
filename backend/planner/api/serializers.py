@@ -8,6 +8,8 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from planner.domain.models import LatLon, RiskLevel
+from planner.infra.resilience import BreakerState
+from planner.providers.protocols import MAX_RESULTS, PlaceKind
 from planner.services.models import ALLOWED_INTERVALS_MI, PlanBanner, PlanRequest
 
 MAX_LABEL_LENGTH = 200
@@ -20,6 +22,36 @@ class HealthSerializer(serializers.Serializer[dict[str, str]]):
     """Liveness response."""
 
     status = serializers.CharField()
+
+
+PLACE_KINDS = [kind.value for kind in PlaceKind]
+BREAKER_STATES = [state.value for state in BreakerState]
+
+
+class ReadySerializer(serializers.Serializer[Any]):
+    """Readiness response."""
+
+    status = serializers.ChoiceField(choices=["ok", "degraded"])
+    cache = serializers.BooleanField(help_text="Whether the cache stores and returns a value.")
+    providers = serializers.DictField(
+        child=serializers.ChoiceField(choices=BREAKER_STATES),
+        help_text="Circuit breaker state of each upstream provider.",
+    )
+
+
+class PlaceSerializer(serializers.Serializer[Any]):
+    """A place a user can pick."""
+
+    label = serializers.CharField()  # type: ignore[assignment]  # see PointSerializer.label
+    lat = serializers.FloatField()
+    lon = serializers.FloatField()
+    kind = serializers.ChoiceField(choices=PLACE_KINDS)
+
+
+class GeocodeResponseSerializer(serializers.Serializer[Any]):
+    """Places matching a query, best first."""
+
+    results = PlaceSerializer(many=True, help_text=f"At most {MAX_RESULTS}.")
 
 
 class StrictSerializer(serializers.Serializer[Any]):

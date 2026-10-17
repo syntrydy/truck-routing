@@ -20,7 +20,7 @@ from planner.infra.http import (
     default_policies,
     upstream_client_from_settings,
 )
-from planner.infra.resilience import Deadline, MinSpacing, deadline_scope
+from planner.infra.resilience import BreakerState, Deadline, MinSpacing, deadline_scope
 from tests.infra.fakes import FakeClock, FixedJitter
 
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving/-104.99,39.74;-87.63,41.88"
@@ -326,6 +326,26 @@ class TestCircuitBreaker:
             client.get("osrm", OSRM_URL)
 
         assert route.call_count == calls_so_far == 6  # two attempts per failed call
+
+    def test_the_states_of_all_providers_can_be_read_without_a_request(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        client = make_client(clock)
+        assert client.breaker_states() == {
+            "osrm": BreakerState.CLOSED,
+            "open-meteo": BreakerState.CLOSED,
+        }
+
+        self.fail_three_calls(api, client)
+        calls = len(api.calls)
+        assert client.breaker_states() == {
+            "osrm": BreakerState.OPEN,
+            "open-meteo": BreakerState.CLOSED,
+        }
+
+        clock.advance(60.0)
+        assert client.breaker_states()["osrm"] is BreakerState.HALF_OPEN
+        assert len(api.calls) == calls
 
     def test_one_provider_failing_does_not_open_another(
         self, api: respx.MockRouter, clock: FakeClock

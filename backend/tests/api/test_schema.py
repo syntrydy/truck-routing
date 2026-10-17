@@ -149,4 +149,49 @@ def test_the_health_endpoint_is_still_documented(schema: dict[str, Any]) -> None
 
 
 def test_the_schema_lists_nothing_that_does_not_exist(schema: dict[str, Any]) -> None:
-    assert set(schema["paths"]) == {"/api/health", "/api/plan"}
+    assert set(schema["paths"]) == {
+        "/api/health",
+        "/api/ready",
+        "/api/geocode",
+        "/api/plan",
+    }
+
+
+def test_the_geocode_operation_takes_a_required_query(schema: dict[str, Any]) -> None:
+    operation = schema["paths"]["/api/geocode"]["get"]
+
+    (query,) = operation["parameters"]
+    assert (query["name"], query["in"], query["required"]) == ("q", "query", True)
+    assert operation["operationId"] == "geocode"
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/GeocodeResponse"
+    }
+    for status in ("400", "429", "502", "503", "504"):
+        assert operation["responses"][status]["content"]["application/json"]["schema"] == {
+            "$ref": "#/components/schemas/ErrorEnvelope"
+        }
+
+
+def test_the_geocode_response_describes_a_place(schema: dict[str, Any]) -> None:
+    place = schema["components"]["schemas"]["Place"]
+
+    assert set(place["properties"]) == {"label", "lat", "lon", "kind"}
+    assert set(place["required"]) == set(place["properties"])
+    assert place["properties"]["kind"] == {"$ref": "#/components/schemas/PlaceKindEnum"}
+    assert set(schema["components"]["schemas"]["PlaceKindEnum"]["enum"]) == {
+        "city",
+        "region",
+        "country",
+        "street",
+        "address",
+        "place",
+    }
+
+
+def test_the_ready_operation_describes_breakers_and_cache(schema: dict[str, Any]) -> None:
+    operation = schema["paths"]["/api/ready"]["get"]
+    ready = schema["components"]["schemas"]["Ready"]
+
+    assert operation["operationId"] == "ready"
+    assert set(ready["properties"]) == {"status", "cache", "providers"}
+    assert set(ready["required"]) == set(ready["properties"])
