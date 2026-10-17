@@ -13,6 +13,7 @@ from planner.domain.models import (
     RouteScore,
     Stretch,
     WeatherSample,
+    combine_levels,
     is_known,
     max_known,
 )
@@ -77,6 +78,27 @@ class TestMaxKnown:
         known = [level for level in levels if level is not RiskLevel.UNKNOWN]
         expected = max(known) if known else RiskLevel.UNKNOWN
         assert max_known(levels) is expected
+
+
+class TestCombineLevels:
+    def test_known_levels_combine_to_the_worst(self) -> None:
+        assert combine_levels([RiskLevel.LOW, RiskLevel.HIGH]) is RiskLevel.HIGH
+
+    @pytest.mark.parametrize("known", [RiskLevel.LOW, RiskLevel.MODERATE, RiskLevel.HIGH])
+    def test_unknown_with_a_milder_level_is_unknown(self, known: RiskLevel) -> None:
+        assert combine_levels([known, RiskLevel.UNKNOWN]) is RiskLevel.UNKNOWN
+
+    @pytest.mark.parametrize("known", [RiskLevel.SEVERE, RiskLevel.NO_TRAVEL])
+    def test_unknown_does_not_hide_known_danger(self, known: RiskLevel) -> None:
+        assert combine_levels([RiskLevel.UNKNOWN, known]) is known
+
+    def test_all_unknown_and_empty_are_unknown(self) -> None:
+        assert combine_levels([RiskLevel.UNKNOWN, RiskLevel.UNKNOWN]) is RiskLevel.UNKNOWN
+        assert combine_levels([]) is RiskLevel.UNKNOWN
+
+    def test_order_does_not_matter(self) -> None:
+        assert combine_levels([RiskLevel.SEVERE, RiskLevel.UNKNOWN]) is RiskLevel.SEVERE
+        assert combine_levels([RiskLevel.UNKNOWN, RiskLevel.SEVERE]) is RiskLevel.SEVERE
 
 
 class TestLatLon:
