@@ -62,7 +62,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/scoring.py`: stretch level = worse endpoint; miles by level; unknown miles; distance-weighted avg risk; worst level; low-confidence flag.
   - AC: hand-computed fixtures; unknown miles excluded from average and never counted as LOW.
 
-- [ ] **B-14 feat(domain): ranking and recommendation reason** — `type:feat` `area:backend`
+- [x] **B-14 feat(domain): ranking and recommendation reason — #29** — `type:feat` `area:backend`
   - `domain/ranking.py`: sort key per SPEC §4.7; reason from first separating criterion; NO_SAFE_ROUTE when all routes have No Travel miles.
   - AC: one test per tie-breaker level; No Travel outranks Severe; float-noise tie falls through; all-No-Travel → `None` + banner.
 
