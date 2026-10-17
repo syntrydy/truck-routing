@@ -4,12 +4,14 @@ import { vi } from "vitest";
 export const fake = {
   maps: [] as FakeMap[],
   popups: [] as FakePopup[],
+  markers: [] as FakeMarker[],
   attributionOptions: [] as unknown[],
   failOnCreate: false,
   styleLoaded: true,
   reset() {
     this.maps = [];
     this.popups = [];
+    this.markers = [];
     this.attributionOptions = [];
     this.failOnCreate = false;
     this.styleLoaded = true;
@@ -33,7 +35,12 @@ export class FakeSource {
 export class FakeMap {
   readonly controls: { control: unknown; position: string | undefined }[] = [];
   readonly sources = new Map<string, FakeSource>();
-  readonly layers: { id: string; type: string; source: string }[] = [];
+  readonly layers: { id: string; type: string; source: string; before?: string }[] = [];
+  /** The basemap's own layers: water, then the place names. */
+  readonly baseLayers = [
+    { id: "water", type: "fill" },
+    { id: "place-labels", type: "symbol" },
+  ];
   readonly handlers = new Map<string, Handler[]>();
   readonly remove = vi.fn();
   readonly fitBounds = vi.fn();
@@ -52,7 +59,7 @@ export class FakeMap {
 
   /** The style once its JSON is in, `undefined` before (as MapLibre does). */
   getStyle() {
-    return fake.styleLoaded ? { layers: this.layers } : undefined;
+    return fake.styleLoaded ? { layers: [...this.baseLayers, ...this.layers] } : undefined;
   }
 
   getCanvas() {
@@ -67,8 +74,8 @@ export class FakeMap {
     return this.sources.get(id);
   }
 
-  addLayer(layer: { id: string; type: string; source: string }) {
-    this.layers.push(layer);
+  addLayer(layer: { id: string; type: string; source: string }, before?: string) {
+    this.layers.push(before === undefined ? layer : { ...layer, before });
   }
 
   /** `on(type, listener)` or `on(type, layerId, listener)`, as in MapLibre. */
@@ -131,6 +138,28 @@ export class FakePopup {
   }
 }
 
+export class FakeMarker {
+  lngLat: [number, number] | null = null;
+  added = false;
+  readonly remove = vi.fn(() => {
+    this.added = false;
+  });
+
+  constructor(readonly options: { element?: HTMLElement }) {
+    fake.markers.push(this);
+  }
+
+  setLngLat(lngLat: [number, number]) {
+    this.lngLat = lngLat;
+    return this;
+  }
+
+  addTo() {
+    this.added = true;
+    return this;
+  }
+}
+
 export class FakeAttributionControl {
   readonly options: unknown;
 
@@ -152,6 +181,7 @@ export class FakeNavigationControl {
 export const fakeMapLibreModule = {
   Map: FakeMap,
   Popup: FakePopup,
+  Marker: FakeMarker,
   AttributionControl: FakeAttributionControl,
   NavigationControl: FakeNavigationControl,
 };

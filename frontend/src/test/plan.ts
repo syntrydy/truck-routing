@@ -44,6 +44,27 @@ export function route(
   };
 }
 
+/**
+ * A heatmap of three points for `frameCount` hours. At hour h: point 0 is calm, point 1 gets
+ * worse with the hour (risk level up to 4, wind 10 + h mph), point 2 is unknown at hour 0 only.
+ */
+export function sampleHeatmap(frameCount = 49): PlanResponse["heatmap"] {
+  return {
+    start: "2026-10-18T19:00:00Z",
+    points: [
+      [41.9, -87.6],
+      [40.5, -95],
+      [39.7, -105],
+    ],
+    frames: Array.from({ length: frameCount }, (_, hour) => ({
+      risk: [0, Math.min(hour, 4), hour === 0 ? -1 : 2],
+      wind: [10, 10 + hour, hour === 0 ? null : 30],
+      rain: [0, 0.3, hour === 0 ? null : 0],
+      snow: [0, 0, hour === 0 ? null : 0],
+    })),
+  };
+}
+
 /** Two routes from Chicago towards Denver: r1 recommended, r2 the slower one to its south. */
 export function samplePlan(): PlanResponse {
   return {
@@ -72,7 +93,7 @@ export function samplePlan(): PlanResponse {
         ],
       ),
     ],
-    heatmap: { start: "2026-10-18T19:00:00Z", points: [], frames: [] },
+    heatmap: sampleHeatmap(),
     notes: [],
     meta: {
       routing_source: "osrm",

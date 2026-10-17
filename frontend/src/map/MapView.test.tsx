@@ -11,6 +11,7 @@ const idleProps = {
   selection: { selectedId: null, hoveredId: null },
   onSelectRoute: () => undefined,
   onHoverRoute: () => undefined,
+  forecast: { frames: null, hour: 0 },
 };
 import userEvent from "@testing-library/user-event";
 

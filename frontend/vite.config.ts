@@ -1,8 +1,10 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
+import { maplibreWorker } from "./maplibreWorker.ts";
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), maplibreWorker()],
   build: {
     // MapLibre is a lazy chunk of about 1 MB (290 KB gzipped) outside the first-load budget.
     chunkSizeWarningLimit: 1200,

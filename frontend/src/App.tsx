@@ -7,6 +7,8 @@ import { PlanBanners } from "./components/PlanBanners.tsx";
 import { PlanStatus } from "./components/PlanStatus.tsx";
 import { RouteCards } from "./components/RouteCards.tsx";
 import { TripForm } from "./components/TripForm.tsx";
+import { ForecastSlider } from "./components/ForecastSlider.tsx";
+import { useForecast } from "./hooks/useForecast.ts";
 import { usePlan } from "./hooks/usePlan.ts";
 import { MapView } from "./map/MapView.tsx";
 
@@ -17,6 +19,7 @@ export function App() {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  const forecast = useForecast(plan.data ?? null);
   const routes = plan.data?.routes ?? [];
   // The user's pick if it is on screen, otherwise the recommended route.
   const selectedId = routes.some((route) => route.id === chosenId)
@@ -58,9 +61,25 @@ export function App() {
           selection={{ selectedId, hoveredId }}
           onSelectRoute={setChosenId}
           onHoverRoute={setHoveredId}
+          forecast={{ frames: forecast.frames, hour: forecast.hour }}
         />
       }
-      slider={<p>The forecast slider appears once a trip is planned.</p>}
+      slider={
+        plan.data === undefined ? (
+          <p>The forecast slider appears once a trip is planned.</p>
+        ) : (
+          <ForecastSlider
+            startIso={plan.data.heatmap.start}
+            hour={forecast.hour}
+            maxHour={forecast.maxHour}
+            playing={forecast.playing}
+            variable={forecast.variable}
+            onHourChange={forecast.setHour}
+            onTogglePlay={forecast.togglePlay}
+            onVariableChange={forecast.setVariable}
+          />
+        )
+      }
     />
   );
 }

@@ -25,6 +25,7 @@ function props(overrides: Partial<Parameters<typeof MapView>[0]> = {}) {
     selection: NONE,
     onSelectRoute: vi.fn(),
     onHoverRoute: vi.fn(),
+    forecast: { frames: null, hour: 0 },
     ...overrides,
   };
 }
@@ -40,7 +41,7 @@ async function installed(initial = props()) {
   const view = render(<MapView {...initial} />);
   const map = await mapCreated();
   await waitFor(() => {
-    expect(map.layers).toHaveLength(3);
+    expect(map.layers).toHaveLength(5);
   });
   return { ...view, map, callbacks: initial };
 }
@@ -53,8 +54,8 @@ describe("adding the layers", () => {
   it("adds the routes and the checkpoints, with the checkpoints on top", async () => {
     const { map } = await installed();
 
-    expect([...map.sources.keys()]).toEqual(["routes", "checkpoints"]);
-    expect(map.layers.map(({ id, type, source }) => [id, type, source])).toEqual([
+    expect([...map.sources.keys()].slice(0, 2)).toEqual(["routes", "checkpoints"]);
+    expect(map.layers.slice(0, 3).map(({ id, type, source }) => [id, type, source])).toEqual([
       ["routes-casing", "line", "routes"],
       ["routes-line", "line", "routes"],
       ["checkpoints", "circle", "checkpoints"],
@@ -79,7 +80,7 @@ describe("adding the layers", () => {
     map.emit("styledata");
 
     await waitFor(() => {
-      expect(map.layers).toHaveLength(3);
+      expect(map.layers).toHaveLength(5);
     });
     await waitFor(() => {
       expect(features(map, "routes")).toHaveLength(2);
@@ -96,7 +97,7 @@ describe("adding the layers", () => {
       <MapView {...callbacks} plan={samplePlan()} selection={{ ...NONE, selectedId: "r2" }} />,
     );
 
-    expect(map.layers).toHaveLength(3);
+    expect(map.layers).toHaveLength(5);
     expect(fake.maps).toHaveLength(1);
   });
 });
@@ -141,7 +142,7 @@ describe("drawing a plan", () => {
       expect(features(map, "routes")[1]?.properties.emphasis).toBe("selected");
     });
     expect(features(map, "routes")[0]?.properties.emphasis).toBe("normal");
-    expect(map.layers).toHaveLength(3);
+    expect(map.layers).toHaveLength(5);
   });
 });
 

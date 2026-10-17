@@ -1,9 +1,4 @@
-import type {
-  Map as MapLibreMap,
-  MapLayerMouseEvent,
-  Popup,
-  StyleSpecification,
-} from "maplibre-gl";
+import type { MapLayerMouseEvent, Popup } from "maplibre-gl";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import type { PlanResponse } from "../api/types.ts";
@@ -17,15 +12,11 @@ import {
   setRouteData,
 } from "./routeLayers.ts";
 import type { MapState } from "./useMap.ts";
+import { whenStyleLoaded } from "./whenStyleLoaded.ts";
 
 interface RouteLayerCallbacks {
   onSelectRoute: (routeId: string) => void;
   onHoverRoute: (routeId: string | null) => void;
-}
-
-/** MapLibre types `getStyle()` as always there, but it answers `undefined` until the JSON is in. */
-function styleIsLoaded(map: MapLibreMap): boolean {
-  return (map.getStyle() as StyleSpecification | undefined) !== undefined;
 }
 
 function stringProperty(event: MapLayerMouseEvent, name: string): string | null {
@@ -98,15 +89,7 @@ export function useRouteLayers(
       setCursor("");
     };
 
-    // `isStyleLoaded()` is also false while tiles load, and `load` may have fired already, so
-    // wait for the style itself: `getStyle()` has an answer once its JSON is in.
-    let done = false;
-    const install = () => {
-      if (done || !styleIsLoaded(map)) {
-        return;
-      }
-      done = true;
-      map.off("styledata", install);
+    const stopWaiting = whenStyleLoaded(map, () => {
       installRouteLayers(map);
       map.on("mousemove", ROUTES_LINE_LAYER, onRouteMove);
       map.on("mouseleave", ROUTES_LINE_LAYER, onRouteLeave);
@@ -115,12 +98,10 @@ export function useRouteLayers(
       map.on("mouseenter", CHECKPOINTS_LAYER, onCheckpointEnter);
       map.on("mouseleave", CHECKPOINTS_LAYER, onCheckpointLeave);
       setInstalled(true);
-    };
-    map.on("styledata", install);
-    install();
+    });
 
     return () => {
-      map.off("styledata", install);
+      stopWaiting();
       map.off("mousemove", ROUTES_LINE_LAYER, onRouteMove);
       map.off("mouseleave", ROUTES_LINE_LAYER, onRouteLeave);
       map.off("click", ROUTES_LINE_LAYER, onRouteClick);
