@@ -24,6 +24,7 @@ from planner.infra.errors import (
     UpstreamUnavailable,
     UpstreamWaitTimeout,
 )
+from planner.infra.metrics import record_upstream_call
 from planner.infra.resilience import (
     BreakerState,
     CircuitBreaker,
@@ -131,6 +132,7 @@ class UpstreamClient:
         self._providers: Mapping[str, _ProviderState] = {
             policy.name: _ProviderState(policy, clock) for policy in policies
         }
+        self._clock = clock
         self._gates: Mapping[str, Gate] = gates or {}
         self._allowed_hosts = frozenset(host.lower() for host in allowed_hosts)
         self._user_agent = user_agent
@@ -220,6 +222,7 @@ class UpstreamClient:
         if not state.breaker.allow():
             msg = "circuit open"
             raise UpstreamUnavailable(provider, msg)
+        started = self._clock()
         try:
             response = self._send_with_retries(state, request, deadline)
         except UpstreamWaitTimeout:
@@ -231,6 +234,8 @@ class UpstreamClient:
         except UpstreamError:
             state.breaker.record_success()  # the provider is healthy; it rejected our request
             raise
+        finally:
+            record_upstream_call(provider, self._clock() - started)
         state.breaker.record_success()
         return response
 

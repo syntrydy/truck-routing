@@ -9,6 +9,7 @@ while when Open-Meteo is down.
 
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -16,6 +17,7 @@ from planner.domain.models import HourlySeries, LatLon
 from planner.infra.cache import StaleIfErrorCache, weather_key
 from planner.infra.errors import UpstreamTimeout, UpstreamUnavailable
 from planner.infra.http import UpstreamClient
+from planner.infra.metrics import record_cache_lookup, record_weather_points
 from planner.infra.resilience import Deadline, current_deadline
 from planner.providers.jsonshape import JsonShape
 from planner.providers.protocols import WeatherResult, rounded_point
@@ -73,13 +75,16 @@ class OpenMeteoWeatherProvider:
             raise ValueError(msg)
 
         places = list(dict.fromkeys(rounded_point(point) for point in points))
+        record_weather_points(len(places))
         keys = {place: weather_key(place, first_day, last_day) for place in places}
         series: dict[LatLon, HourlySeries | None] = {}
         old: dict[LatLon, Any] = {}  # entries past their fresh lifetime, usable if a fetch fails
         to_fetch: list[LatLon] = []
         for place in places:
             entry = self._cache.peek(keys[place])
-            if entry is not None and entry.age_s < FRESH_TTL_S:
+            fresh = entry is not None and entry.age_s < FRESH_TTL_S
+            record_cache_lookup(hit=fresh)
+            if entry is not None and fresh:
                 series[place] = entry.value
                 continue
             to_fetch.append(place)
@@ -121,8 +126,11 @@ class OpenMeteoWeatherProvider:
         """
         deadline = current_deadline()  # worker threads do not inherit the caller's context
         with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_BATCHES) as pool:
+            # Each task runs in a copy of this context, so its calls count in the request's metrics.
             futures = [
-                pool.submit(self._fetch_batch, batch, first_day, last_day, deadline)
+                pool.submit(
+                    copy_context().run, self._fetch_batch, batch, first_day, last_day, deadline
+                )
                 for batch in batches
             ]
             results: list[list[HourlySeries] | None] = []

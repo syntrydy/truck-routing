@@ -19,6 +19,7 @@ from django.core.cache.backends.base import BaseCache
 
 from planner.domain.models import LatLon
 from planner.infra.errors import UpstreamError
+from planner.infra.metrics import record_cache_lookup
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ class StaleIfErrorCache:
         """
         entry = self._read(key)
         if entry is not None and self._age(entry) < fresh_ttl_s:
+            record_cache_lookup(hit=True)
             return CacheResult(entry["value"])
+        record_cache_lookup(hit=False)
         try:
             value = loader()
         except catch:

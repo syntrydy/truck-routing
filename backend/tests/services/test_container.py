@@ -18,6 +18,7 @@ from planner.services.container import (
     container_from_settings,
     get_container,
 )
+from planner.services.observed import ObservedPlanService
 from planner.services.plan import PlanService
 
 
@@ -46,31 +47,32 @@ class TestBuildContainer:
     ) -> None:
         container = build(client)
 
-        assert isinstance(container.plan_service, PlanService)
+        assert isinstance(container.plan_service, ObservedPlanService)
+        assert isinstance(container.plan_service.service, PlanService)
         assert isinstance(container.geocoder, CachedGeocoder)
         assert container.client is client
 
     def test_without_an_ors_key_routing_is_osrm_alone(self, client: UpstreamClient) -> None:
-        service = build(client).plan_service
+        service = build(client).plan_service.service
 
         assert isinstance(service._routing, OsrmRoutingProvider)  # noqa: SLF001
 
     def test_with_an_ors_key_routing_falls_back_to_openrouteservice(
         self, client: UpstreamClient
     ) -> None:
-        service = build(client, ors_api_key="a-key").plan_service
+        service = build(client, ors_api_key="a-key").plan_service.service
 
         assert isinstance(service._routing, FallbackRoutingProvider)  # noqa: SLF001
 
     def test_weather_comes_from_open_meteo(self, client: UpstreamClient) -> None:
-        service = build(client).plan_service
+        service = build(client).plan_service.service
 
         assert isinstance(service._weather, OpenMeteoWeatherProvider)  # noqa: SLF001
 
     def test_the_plan_service_gets_the_speed_and_the_wind_basis(
         self, client: UpstreamClient
     ) -> None:
-        service = build(client, max_speed_mph=55.0, wind_basis=WindBasis.GUST).plan_service
+        service = build(client, max_speed_mph=55.0, wind_basis=WindBasis.GUST).plan_service.service
 
         assert service._max_speed_mph == 55.0  # noqa: SLF001
         assert service._wind_basis is WindBasis.GUST  # noqa: SLF001
@@ -83,7 +85,7 @@ class TestBuildContainer:
         container = build(client, cache_backend=backend)
 
         assert container.cache._backend is backend  # noqa: SLF001
-        assert container.plan_service._weather._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
+        assert container.plan_service.service._weather._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
         assert container.geocoder._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
 
 
@@ -93,9 +95,9 @@ class TestFromSettings:
 
         container = container_from_settings()
 
-        assert container.plan_service._max_speed_mph == 65.0  # noqa: SLF001
-        assert container.plan_service._wind_basis is WindBasis.SUSTAINED  # noqa: SLF001
-        assert isinstance(container.plan_service._routing, OsrmRoutingProvider)  # noqa: SLF001
+        assert container.plan_service.service._max_speed_mph == 65.0  # noqa: SLF001
+        assert container.plan_service.service._wind_basis is WindBasis.SUSTAINED  # noqa: SLF001
+        assert isinstance(container.plan_service.service._routing, OsrmRoutingProvider)  # noqa: SLF001
 
     def test_the_settings_are_honoured(self, settings: Any) -> None:
         settings.ORS_API_KEY = "a-key"
@@ -104,9 +106,9 @@ class TestFromSettings:
 
         container = container_from_settings()
 
-        assert isinstance(container.plan_service._routing, FallbackRoutingProvider)  # noqa: SLF001
-        assert container.plan_service._max_speed_mph == 60.0  # noqa: SLF001
-        assert container.plan_service._wind_basis is WindBasis.GUST  # noqa: SLF001
+        assert isinstance(container.plan_service.service._routing, FallbackRoutingProvider)  # noqa: SLF001
+        assert container.plan_service.service._max_speed_mph == 60.0  # noqa: SLF001
+        assert container.plan_service.service._wind_basis is WindBasis.GUST  # noqa: SLF001
 
     def test_the_client_is_built_from_the_upstream_settings(self, settings: Any) -> None:
         settings.UPSTREAM_ALLOWED_HOSTS = ["router.project-osrm.org"]

@@ -15,6 +15,7 @@ from planner.providers.geocode_chain import build_geocoder
 from planner.providers.protocols import GeocodeProvider
 from planner.providers.routing_chain import build_routing_provider
 from planner.providers.weather_openmeteo import OpenMeteoWeatherProvider
+from planner.services.observed import ObservedPlanService
 from planner.services.plan import PlanService
 
 
@@ -22,7 +23,7 @@ from planner.services.plan import PlanService
 class Container:
     """What the views need: the plan service and the geocoder, with their shared parts."""
 
-    plan_service: PlanService
+    plan_service: ObservedPlanService
     geocoder: GeocodeProvider
     client: UpstreamClient
     cache: StaleIfErrorCache
@@ -39,11 +40,14 @@ def build_container(
     """Wire the providers, the cache and the plan service from explicit parts."""
     cache = StaleIfErrorCache(cache_backend)
     return Container(
-        plan_service=PlanService(
-            build_routing_provider(client, ors_api_key),
-            OpenMeteoWeatherProvider(client, cache),
-            max_speed_mph=max_speed_mph,
-            wind_basis=wind_basis,
+        plan_service=ObservedPlanService(
+            PlanService(
+                build_routing_provider(client, ors_api_key),
+                OpenMeteoWeatherProvider(client, cache),
+                max_speed_mph=max_speed_mph,
+                wind_basis=wind_basis,
+            ),
+            client.breaker_states,
         ),
         geocoder=build_geocoder(client, cache),
         client=client,

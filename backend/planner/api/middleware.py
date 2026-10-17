@@ -6,6 +6,8 @@ from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
+from planner.infra.jsonlog import request_id_var
+
 REQUEST_ID_HEADER = "X-Request-ID"
 # What a caller may send as an ID: short, printable and free of anything a log could mistake.
 VALID_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
@@ -26,6 +28,10 @@ class RequestIdMiddleware:
         incoming = request.headers.get(REQUEST_ID_HEADER, "")
         request_id = incoming if VALID_REQUEST_ID.fullmatch(incoming) else uuid.uuid4().hex
         request.request_id = request_id  # type: ignore[attr-defined]
-        response = self._get_response(request)
+        token = request_id_var.set(request_id)  # every log line of this request carries it
+        try:
+            response = self._get_response(request)
+        finally:
+            request_id_var.reset(token)
         response[REQUEST_ID_HEADER] = request_id
         return response
