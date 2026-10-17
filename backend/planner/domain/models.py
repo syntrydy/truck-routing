@@ -6,7 +6,7 @@ in inches per hour, durations in seconds, all datetimes timezone-aware (UTC).
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import IntEnum
 
 MIN_LATITUDE = -90.0
@@ -125,3 +125,49 @@ class RouteScore:
     avg_risk: float | None = None
     worst_level: RiskLevel = RiskLevel.UNKNOWN
     low_confidence: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class HourlySeries:
+    """Hourly weather at one place: entry ``i`` describes ``start + i`` hours.
+
+    ``start`` is a timezone-aware instant on the hour. All tuples have the same length
+    and ``None`` marks a value the provider did not supply. Precipitation values
+    (``rain_in``, ``showers_in``, ``snowfall_in``, in inches) are totals over the hour
+    ending at the entry's time; wind and gusts (mph) are instantaneous.
+    """
+
+    start: datetime
+    wind_mph: tuple[float | None, ...]
+    gust_mph: tuple[float | None, ...]
+    rain_in: tuple[float | None, ...]
+    showers_in: tuple[float | None, ...]
+    snowfall_in: tuple[float | None, ...]
+    weather_code: tuple[int | None, ...]
+
+    def __post_init__(self) -> None:
+        if self.start.tzinfo is None:
+            msg = "series start must be timezone-aware"
+            raise ValueError(msg)
+        if self.start != self.start.replace(minute=0, second=0, microsecond=0):
+            msg = "series start must be on the hour"
+            raise ValueError(msg)
+        lengths = {
+            len(self.wind_mph),
+            len(self.gust_mph),
+            len(self.rain_in),
+            len(self.showers_in),
+            len(self.snowfall_in),
+            len(self.weather_code),
+        }
+        if len(lengths) != 1:
+            msg = "all hourly series must have the same length"
+            raise ValueError(msg)
+
+    def __len__(self) -> int:
+        return len(self.wind_mph)
+
+    @property
+    def end(self) -> datetime:
+        """Time of the last entry."""
+        return self.start + timedelta(hours=len(self) - 1)

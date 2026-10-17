@@ -54,7 +54,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/sampling.py`: apply truck speed cap per segment; sample at interval incl. destination; ETA interpolation; stretch lengths.
   - AC: trip shorter than interval → 2 checkpoints; destination always last; ETAs strictly increasing; speed cap test (fast segment slowed, slow segment untouched).
 
-- [ ] **B-12 feat(domain): select weather at ETA** — `type:feat` `area:backend`
+- [x] **B-12 feat(domain): select weather at ETA — #25** — `type:feat` `area:backend`
   - `domain/weather_select.py`: preceding-hour rule for precipitation, linear wind interpolation, `rain + showers`, out-of-range/null → None.
   - AC: tests for ETA exactly on the hour, 14:20 picks 15:00 precipitation, beyond series → None, nulls.
 

@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 
 from planner.domain.models import (
     Checkpoint,
+    HourlySeries,
     LatLon,
     RiskLevel,
     RouteScore,
@@ -164,3 +165,45 @@ class TestStretchAndRouteScore:
         second = RouteScore(distance_mi=1.0, duration_s=1.0)
 
         assert first.miles_by_level is not second.miles_by_level
+
+
+class TestHourlySeries:
+    START = datetime(2026, 1, 15, 12, tzinfo=UTC)
+
+    def build(self, start: datetime | None = None, length: int = 3) -> HourlySeries:
+        values = (0.0,) * length
+        return HourlySeries(
+            start=start or self.START,
+            wind_mph=values,
+            gust_mph=values,
+            rain_in=values,
+            showers_in=values,
+            snowfall_in=values,
+            weather_code=(0,) * length,
+        )
+
+    def test_reports_its_length_and_last_entry_time(self) -> None:
+        series = self.build(length=4)
+
+        assert len(series) == 4
+        assert series.end == datetime(2026, 1, 15, 15, tzinfo=UTC)
+
+    def test_rejects_a_naive_start(self) -> None:
+        with pytest.raises(ValueError, match="timezone-aware"):
+            self.build(start=datetime(2026, 1, 15, 12))  # noqa: DTZ001 - the naive value is the input
+
+    def test_rejects_a_start_that_is_not_on_the_hour(self) -> None:
+        with pytest.raises(ValueError, match="on the hour"):
+            self.build(start=datetime(2026, 1, 15, 12, 30, tzinfo=UTC))
+
+    def test_rejects_series_of_different_lengths(self) -> None:
+        with pytest.raises(ValueError, match="same length"):
+            HourlySeries(
+                start=self.START,
+                wind_mph=(1.0, 2.0),
+                gust_mph=(1.0,),
+                rain_in=(0.0, 0.0),
+                showers_in=(0.0, 0.0),
+                snowfall_in=(0.0, 0.0),
+                weather_code=(0, 0),
+            )
