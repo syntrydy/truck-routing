@@ -26,13 +26,13 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
+DJANGO_SETTINGS_MODULE = "config.settings_test"
 testpaths = ["tests"]
 addopts = "--cov=planner --cov=config --cov-report=term-missing --cov-report=xml"
 
 [tool.coverage.run]
 branch = true
-omit = ["config/wsgi.py"]
+omit = ["config/wsgi.py", "config/settings_test.py"]
 
 [tool.ruff]
 line-length = 100
