@@ -39,6 +39,10 @@ jobs:
         run: uv run mypy .
       - name: Tests with coverage gate
         run: uv run pytest --cov-fail-under=85
+      - name: OpenAPI schema file is up to date
+        run: |
+          uv run python manage.py spectacular --format openapi-json --file openapi/schema.json
+          git diff --exit-code -- openapi/schema.json
       - name: Static security analysis
         run: uv run bandit -q -r config planner -c pyproject.toml
       - name: Dependency audit
@@ -69,6 +73,10 @@ jobs:
       - run: npm ci
       - name: Type check
         run: npm run typecheck
+      - name: API types are up to date
+        run: |
+          npm run gen:api
+          git diff --exit-code -- src/api/schema.d.ts
       - name: Lint
         run: npm run lint
       - name: Format check

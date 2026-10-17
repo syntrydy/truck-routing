@@ -1,8 +1,15 @@
-.PHONY: be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build check
+.PHONY: gen-api api-check be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build check
 
 BACKEND := backend
 FRONTEND := frontend
 ARGS ?=
+
+gen-api: ## regenerate the OpenAPI schema file and the frontend types from it
+	cd $(BACKEND) && uv run python manage.py spectacular --format openapi-json --file openapi/schema.json
+	cd $(FRONTEND) && npm run gen:api
+
+api-check: gen-api ## fail when the checked-in schema or types are stale
+	git diff --exit-code -- $(BACKEND)/openapi/schema.json $(FRONTEND)/src/api/schema.d.ts
 
 be-lint: ## ruff lint and format check
 	cd $(BACKEND) && uv run ruff check . && uv run ruff format --check .
