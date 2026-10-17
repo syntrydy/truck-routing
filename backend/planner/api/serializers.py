@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from datetime import datetime, timedelta
 from typing import Any
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from planner.domain.models import LatLon, RiskLevel
@@ -61,6 +62,7 @@ class StrictIntegerField(serializers.IntegerField):
         return super().to_internal_value(data)
 
 
+@extend_schema_field({"type": "string", "format": "date-time"})
 class OffsetDateTimeField(serializers.Field[datetime, str, str, Any]):
     """An ISO 8601 date and time that states its UTC offset (``Z`` or ``+hh:mm``)."""
 
@@ -143,7 +145,6 @@ def parse_plan_request(data: Any, now: datetime) -> PlanRequest:  # noqa: ANN401
 # --- (it is compacted), and the tests check that what it builds validates against these.
 
 LEVELS = [level.name for level in RiskLevel]
-KNOWN_LEVELS = [level.name for level in RiskLevel if level is not RiskLevel.UNKNOWN]
 BANNERS = [banner.value for banner in PlanBanner]
 
 

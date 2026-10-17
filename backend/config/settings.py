@@ -110,4 +110,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Safest-route planning for trucks based on weather along the route.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # One name for each choice list that several fields share.
+    "ENUM_NAME_OVERRIDES": {
+        "RiskLevelEnum": "planner.api.serializers.LEVELS",
+        "BannerEnum": "planner.api.serializers.BANNERS",
+    },
 }
