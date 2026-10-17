@@ -5,6 +5,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ATTRIBUTION, INITIAL_CENTER, INITIAL_ZOOM, MAP_STYLE_URL } from "./config.ts";
 import { fake, fakeMapLibreModule } from "./fakeMapLibre.ts";
 import { MapView } from "./MapView.tsx";
+
+const idleProps = {
+  plan: null,
+  selection: { selectedId: null, hoveredId: null },
+  onSelectRoute: () => undefined,
+  onHoverRoute: () => undefined,
+};
 import userEvent from "@testing-library/user-event";
 
 vi.mock("maplibre-gl", () => fakeMapLibreModule);
@@ -22,7 +29,7 @@ async function mapCreated() {
 
 describe("MapView", () => {
   it("shows a loading message, then the map", async () => {
-    render(<MapView />);
+    render(<MapView {...idleProps} />);
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading the map");
     await mapCreated();
@@ -32,7 +39,7 @@ describe("MapView", () => {
   });
 
   it("creates the map in its container, centred on the United States", async () => {
-    render(<MapView />);
+    render(<MapView {...idleProps} />);
 
     const map = await mapCreated();
 
@@ -46,7 +53,7 @@ describe("MapView", () => {
   });
 
   it("shows the credit of the routing and weather data, expanded", async () => {
-    render(<MapView />);
+    render(<MapView {...idleProps} />);
     await mapCreated();
 
     expect(fake.attributionOptions).toEqual([
@@ -59,7 +66,7 @@ describe("MapView", () => {
   });
 
   it("adds zoom buttons without the compass", async () => {
-    render(<MapView />);
+    render(<MapView {...idleProps} />);
 
     const map = await mapCreated();
 
@@ -79,7 +86,7 @@ describe("MapView", () => {
           >
             clicked {count}
           </button>
-          <MapView />
+          <MapView {...idleProps} />
         </>
       );
     }
@@ -98,7 +105,7 @@ describe("MapView", () => {
   it("is created once even when React mounts it twice in development", async () => {
     render(
       <StrictMode>
-        <MapView />
+        <MapView {...idleProps} />
       </StrictMode>,
     );
 
@@ -109,7 +116,7 @@ describe("MapView", () => {
   });
 
   it("removes the map when it goes away", async () => {
-    const { unmount } = render(<MapView />);
+    const { unmount } = render(<MapView {...idleProps} />);
     const map = await mapCreated();
 
     unmount();
@@ -118,7 +125,7 @@ describe("MapView", () => {
   });
 
   it("creates no map when it goes away before MapLibre has loaded", async () => {
-    const { unmount } = render(<MapView />);
+    const { unmount } = render(<MapView {...idleProps} />);
     unmount();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -128,7 +135,7 @@ describe("MapView", () => {
   it("says so when the map cannot start", async () => {
     fake.failOnCreate = true;
 
-    render(<MapView />);
+    render(<MapView {...idleProps} />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("could not be loaded");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();

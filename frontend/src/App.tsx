@@ -3,23 +3,49 @@ import { useState } from "react";
 import type { PlanRequest } from "./api/types.ts";
 import { useWarmUp } from "./api/useWarmUp.ts";
 import { AppShell } from "./components/AppShell.tsx";
+import { PlanStatus } from "./components/PlanStatus.tsx";
 import { TripForm } from "./components/TripForm.tsx";
+import { usePlan } from "./hooks/usePlan.ts";
 import { MapView } from "./map/MapView.tsx";
 
 export function App() {
   useWarmUp();
-  // Until planning is wired to the API, the last submitted request stands for the plan shown.
+  const plan = usePlan();
   const [planned, setPlanned] = useState<PlanRequest | null>(null);
+  const [chosenId, setChosenId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const routes = plan.data?.routes ?? [];
+  // The user's pick if it is on screen, otherwise the recommended route.
+  const selectedId = routes.some((route) => route.id === chosenId)
+    ? chosenId
+    : (plan.data?.recommended_route_id ?? routes[0]?.id ?? null);
+
   return (
     <AppShell
       panel={
         <>
           <h1>Weather-Aware Truck Routing</h1>
           <p>Pick a route, check the weather along it, and drive the safest one.</p>
-          <TripForm planned={planned} onSubmit={setPlanned} />
+          <TripForm
+            planned={planned}
+            onSubmit={(request) => {
+              setPlanned(request);
+              setChosenId(null);
+              plan.mutate(request);
+            }}
+          />
+          <PlanStatus pending={plan.isPending} error={plan.error} />
         </>
       }
-      map={<MapView />}
+      map={
+        <MapView
+          plan={plan.data ?? null}
+          selection={{ selectedId, hoveredId }}
+          onSelectRoute={setChosenId}
+          onHoverRoute={setHoveredId}
+        />
+      }
       slider={<p>The forecast slider appears once a trip is planned.</p>}
     />
   );

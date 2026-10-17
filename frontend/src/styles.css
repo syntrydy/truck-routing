@@ -293,3 +293,53 @@ body,
 .trip-form__submit:hover {
   background: #14305f;
 }
+
+.plan-status {
+  margin: 1rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-left: 4px solid #1a3d7c;
+  background: #eef3fb;
+  color: var(--ink);
+}
+
+.plan-status--error {
+  border-left-color: #b3261e;
+  background: #fdecea;
+  font-weight: 600;
+}
+
+.plan-status__id {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* The checkpoint popup */
+.popup h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.popup__level {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.popup dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.125rem 0.75rem;
+  margin: 0 0 0.5rem;
+}
+
+.popup dt {
+  color: var(--ink-soft);
+}
+
+.popup dd {
+  margin: 0;
+}
+
+.popup ul {
+  margin: 0;
+  padding-left: 1.125rem;
+}
