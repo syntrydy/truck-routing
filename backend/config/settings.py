@@ -8,6 +8,8 @@ from pathlib import Path
 
 import environ
 
+from config.caches import caches_for
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
@@ -21,6 +23,9 @@ SECRET_KEY = env("SECRET_KEY", default="insecure-dev-key" if DEBUG else environ.
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# Disposable cache shared by the API workers: in-process memory unless REDIS_URL is set.
+CACHES = caches_for(env("REDIS_URL", default=""))
 
 # Outbound calls to upstream providers (SPEC sections 6 and 8): only these hosts, over https.
 UPSTREAM_USER_AGENT = env(
