@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pytest
@@ -275,6 +275,77 @@ class TestBackendTrouble:
         assert recorder.sets[0]["value"] == {"value": "v", "fetched_at": clock.now}
 
 
+DAY = date(2026, 10, 18)
+NEXT_DAY = date(2026, 10, 19)
+
+
+class TestPeekAndPut:
+    def test_peek_on_a_miss(self, backend: LocMemCache, clock: FakeClock) -> None:
+        assert StaleIfErrorCache(backend, clock).peek("k") is None
+
+    def test_a_put_value_can_be_peeked_with_its_age(
+        self, backend: LocMemCache, clock: FakeClock
+    ) -> None:
+        cache = StaleIfErrorCache(backend, clock)
+        cache.put("k", {"a": 1}, max_stale_age_s=MAX_STALE_S)
+        clock.advance(120)
+
+        entry = cache.peek("k")
+
+        assert entry is not None
+        assert entry.value == {"a": 1}
+        assert entry.age_s == pytest.approx(120)
+
+    def test_peek_returns_entries_that_are_no_longer_fresh(
+        self, backend: LocMemCache, clock: FakeClock
+    ) -> None:
+        cache = StaleIfErrorCache(backend, clock)
+        cache.put("k", "old", max_stale_age_s=MAX_STALE_S)
+        clock.advance(FRESH_S * 10)
+
+        entry = cache.peek("k")
+
+        assert entry is not None
+        assert entry.age_s > FRESH_S
+
+    def test_put_and_get_or_load_share_entries(
+        self, backend: LocMemCache, clock: FakeClock
+    ) -> None:
+        cache = StaleIfErrorCache(backend, clock)
+        cache.put("k", "stored", max_stale_age_s=MAX_STALE_S)
+        loader = Loader("loaded")
+
+        assert fetch(cache, loader).value == "stored"
+        assert loader.calls == 0
+
+    def test_get_or_load_entries_can_be_peeked(
+        self, backend: LocMemCache, clock: FakeClock
+    ) -> None:
+        cache = StaleIfErrorCache(backend, clock)
+        fetch(cache, Loader("loaded"))
+
+        entry = cache.peek("k")
+
+        assert entry is not None
+        assert entry.value == "loaded"
+
+    def test_put_expires_the_entry_in_the_backend_at_the_stale_limit(
+        self, clock: FakeClock
+    ) -> None:
+        recorder = RecordingBackend()
+
+        StaleIfErrorCache(recorder, clock).put("k", "v", max_stale_age_s=21_600)  # type: ignore[arg-type]
+
+        assert recorder.sets[0]["timeout"] == 21_600
+
+    def test_a_broken_cache_peeks_as_a_miss_and_ignores_puts(self, clock: FakeClock) -> None:
+        cache = StaleIfErrorCache(BrokenBackend(), clock)  # type: ignore[arg-type]
+
+        cache.put("k", "v", max_stale_age_s=MAX_STALE_S)
+
+        assert cache.peek("k") is None
+
+
 class TestKeys:
     def test_route_key_rounds_the_points_to_a_hundred_meters_or_so(self) -> None:
         key = route_key(LatLon(39.73921, -104.99028), LatLon(41.87811, -87.62980), "osrm")
@@ -296,20 +367,35 @@ class TestKeys:
         assert route_key(a, b, "osrm") != route_key(a, b, "openrouteservice")
 
     def test_weather_key_rounds_to_a_tenth_of_a_degree(self) -> None:
-        assert weather_key(LatLon(39.7392, -104.9903)) == "truck:v1:weather:39.7,-105.0"
+        key = weather_key(LatLon(39.7392, -104.9903), DAY, NEXT_DAY)
+
+        assert key == "truck:v1:weather:39.7,-105.0:2026-10-18:2026-10-19"
 
     def test_lattice_points_and_nearby_points_share_a_weather_key(self) -> None:
-        assert weather_key(LatLon(39.7, -105.0)) == weather_key(LatLon(39.74, -104.96))
-        assert weather_key(LatLon(39.7, -105.0)) != weather_key(LatLon(39.8, -105.0))
+        assert weather_key(LatLon(39.7, -105.0), DAY, NEXT_DAY) == weather_key(
+            LatLon(39.74, -104.96), DAY, NEXT_DAY
+        )
+        assert weather_key(LatLon(39.7, -105.0), DAY, NEXT_DAY) != weather_key(
+            LatLon(39.8, -105.0), DAY, NEXT_DAY
+        )
+
+    def test_weather_keys_depend_on_the_day_range(self) -> None:
+        point = LatLon(39.7, -105.0)
+
+        assert weather_key(point, DAY, NEXT_DAY) != weather_key(point, NEXT_DAY, NEXT_DAY)
+        assert weather_key(point, DAY, DAY) != weather_key(point, DAY, NEXT_DAY)
 
     def test_negative_zero_is_not_written(self) -> None:
-        key = weather_key(LatLon(-0.04, -0.01))
+        key = weather_key(LatLon(-0.04, -0.01), DAY, DAY)
 
-        assert key == "truck:v1:weather:0.0,0.0"
+        assert key == "truck:v1:weather:0.0,0.0:2026-10-18:2026-10-18"
         assert "-0.0" not in key
 
     def test_southern_and_western_coordinates_keep_their_sign(self) -> None:
-        assert weather_key(LatLon(-33.9, -70.7)) == "truck:v1:weather:-33.9,-70.7"
+        assert (
+            weather_key(LatLon(-33.9, -70.7), DAY, DAY)
+            == "truck:v1:weather:-33.9,-70.7:2026-10-18:2026-10-18"
+        )
 
     def test_geocode_key_ignores_case_and_extra_whitespace(self) -> None:
         assert geocode_key("  Denver,   CO ", "photon") == geocode_key("denver, co", "photon")
