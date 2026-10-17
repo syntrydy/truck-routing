@@ -84,7 +84,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `infra/cache.py`: cache-aside helper storing value + fetched_at; fresh TTL and stale window; key builders with coordinate rounding; LocMem default, Redis via `REDIS_URL`.
   - AC: tests for hit, miss, stale served on loader error with flag, stale window expiry raises.
 
-- [ ] **B-19 feat(providers): OSRM routing adapter** — `type:feat` `area:backend`
+- [x] **B-19 feat(providers): OSRM routing adapter — #39** — `type:feat` `area:backend`
   - Protocol `RoutingProvider`; OSRM adapter (route with alternatives, route via waypoint), 1.1 s spacing lock, maps response to domain types incl. per-segment annotations and snap distance, NoRoute mapping.
   - AC: recorded fixtures for 3-route, 1-route, NoRoute, malformed JSON; lock spacing verified with injected clock.
 

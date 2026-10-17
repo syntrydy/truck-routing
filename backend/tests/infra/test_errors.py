@@ -6,6 +6,7 @@ from planner.infra.errors import (
     UpstreamError,
     UpstreamTimeout,
     UpstreamUnavailable,
+    UpstreamWaitTimeout,
 )
 
 
@@ -36,3 +37,19 @@ def test_the_specific_failures_are_distinct() -> None:
 def test_a_disallowed_host_is_not_an_upstream_failure() -> None:
     assert issubclass(HostNotAllowed, ValueError)
     assert not issubclass(HostNotAllowed, UpstreamError)
+
+
+def test_status_and_body_are_optional_and_kept_out_of_the_message() -> None:
+    plain = UpstreamError("osrm", "HTTP 400")
+    detailed = UpstreamError("osrm", "HTTP 400", status=400, body='{"code":"NoRoute"}')
+
+    assert (plain.status, plain.body) == (None, None)
+    assert (detailed.status, detailed.body) == (400, '{"code":"NoRoute"}')
+    assert "NoRoute" not in str(detailed)
+
+
+def test_waiting_too_long_locally_is_a_timeout() -> None:
+    error = UpstreamWaitTimeout("osrm", "no slot")
+
+    assert isinstance(error, UpstreamTimeout)
+    assert not isinstance(UpstreamTimeout("osrm", "x"), UpstreamWaitTimeout)

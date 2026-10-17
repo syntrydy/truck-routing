@@ -18,7 +18,7 @@ from planner.infra.http import (
     default_policies,
     upstream_client_from_settings,
 )
-from planner.infra.resilience import Deadline, deadline_scope
+from planner.infra.resilience import Deadline, MinSpacing, deadline_scope
 from tests.infra.fakes import FakeClock, FixedJitter
 
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving/-104.99,39.74;-87.63,41.88"
@@ -588,6 +588,113 @@ class TestDefaultPolicies:
         assert {p.failure_threshold for p in policies.values()} == {3}
         assert {p.reset_after_s for p in policies.values()} == {60.0}
         assert {p.backoff_base_s for p in policies.values()} == {0.3}
+
+
+class TestRejectedRequests:
+    def test_a_rejected_request_exposes_the_status_and_a_short_body(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).respond(400, json={"code": "NoRoute", "message": "Impossible route"})
+
+        with pytest.raises(UpstreamError) as raised:
+            make_client(clock).get("osrm", OSRM_URL)
+
+        assert raised.value.status == 400
+        assert raised.value.body is not None
+        assert "NoRoute" in raised.value.body
+        assert "NoRoute" not in str(raised.value)
+
+    def test_a_huge_error_body_is_cut_short(self, api: respx.MockRouter, clock: FakeClock) -> None:
+        api.get(OSRM_URL).respond(400, text="x" * 50_000)
+
+        with pytest.raises(UpstreamError) as raised:
+            make_client(clock).get("osrm", OSRM_URL)
+
+        assert raised.value.body is not None
+        assert len(raised.value.body) == 2_000
+
+
+class TestGates:
+    def gated_client(self, clock: FakeClock) -> UpstreamClient:
+        spacing = MinSpacing(1.1, "osrm", clock, clock.sleep)
+        return UpstreamClient(
+            [
+                ProviderPolicy("osrm", timeout_s=8.0, max_concurrency=1),
+                ProviderPolicy("open-meteo", timeout_s=10.0, max_concurrency=4),
+            ],
+            ALLOWED,
+            USER_AGENT,
+            clock=clock,
+            sleep=clock.sleep,
+            jitter=FixedJitter(1.0),
+            gates={"osrm": spacing},
+        )
+
+    def test_requests_to_a_gated_provider_are_spaced(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).respond(200, json=OK)
+        client = self.gated_client(clock)
+
+        client.get("osrm", OSRM_URL)
+        client.get("osrm", OSRM_URL)
+
+        assert clock.sleeps == [pytest.approx(1.1)]
+
+    def test_a_retry_is_spaced_from_the_failed_attempt_too(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).mock(side_effect=[httpx.Response(503), httpx.Response(200, json=OK)])
+
+        self.gated_client(clock).get("osrm", OSRM_URL)
+
+        assert clock.sleeps == [pytest.approx(0.3), pytest.approx(0.8)]  # backoff, then the rest
+
+    def test_other_providers_are_not_gated(self, api: respx.MockRouter, clock: FakeClock) -> None:
+        api.get(WEATHER_URL).respond(200, json={})
+        client = self.gated_client(clock)
+
+        client.get("open-meteo", WEATHER_URL)
+        client.get("open-meteo", WEATHER_URL)
+
+        assert clock.sleeps == []
+
+    def test_a_deadline_too_short_for_the_spacing_stops_the_call(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.get(OSRM_URL).respond(200, json=OK)
+        client = self.gated_client(clock)
+        client.get("osrm", OSRM_URL)
+
+        with pytest.raises(UpstreamTimeout, match="spacing"):
+            client.get("osrm", OSRM_URL, deadline=Deadline(0.5, clock))
+
+        assert route.call_count == 1
+
+    def test_waiting_for_the_spacing_is_not_held_against_the_provider(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).respond(200, json=OK)
+        client = self.gated_client(clock)
+        client.get("osrm", OSRM_URL)
+        for _ in range(4):
+            with pytest.raises(UpstreamTimeout):
+                client.get("osrm", OSRM_URL, deadline=Deadline(0.5, clock))
+
+        clock.advance(2.0)
+        assert client.get("osrm", OSRM_URL).json() == OK
+
+    def test_the_settings_client_spaces_osrm_requests_process_wide(
+        self, api: respx.MockRouter, settings: Any
+    ) -> None:
+        settings.UPSTREAM_ALLOWED_HOSTS = ["router.project-osrm.org"]
+        api.get(OSRM_URL).respond(200, json=OK)
+
+        first, second = upstream_client_from_settings(), upstream_client_from_settings()
+        gate = first._gates["osrm"]  # noqa: SLF001
+        assert gate is second._gates["osrm"]  # noqa: SLF001
+        assert isinstance(gate, MinSpacing)
+        assert gate.spacing_s == 1.1
 
 
 class TestFromSettings:

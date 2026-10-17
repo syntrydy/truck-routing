@@ -2,10 +2,12 @@ import threading
 
 import pytest
 
+from planner.infra.errors import UpstreamWaitTimeout
 from planner.infra.resilience import (
     BreakerState,
     CircuitBreaker,
     Deadline,
+    MinSpacing,
     current_deadline,
     deadline_scope,
 )
@@ -175,3 +177,105 @@ class TestCircuitBreaker:
 
         assert first.state is BreakerState.OPEN
         assert second.state is BreakerState.CLOSED
+
+
+class TestMinSpacing:
+    def make(self, spacing_s: float = 1.1) -> tuple[MinSpacing, FakeClock]:
+        clock = FakeClock()
+        return MinSpacing(spacing_s, "osrm", clock, clock.sleep), clock
+
+    def test_the_first_request_does_not_wait(self) -> None:
+        gate, clock = self.make()
+
+        gate(None)
+
+        assert clock.sleeps == []
+
+    def test_a_request_right_after_another_waits_for_the_remaining_spacing(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+        clock.advance(0.4)
+
+        gate(None)
+
+        assert clock.sleeps == [pytest.approx(0.7)]
+
+    def test_requests_are_spaced_from_the_start_of_the_previous_one(self) -> None:
+        gate, clock = self.make()
+        starts = []
+        for _ in range(4):
+            gate(None)
+            starts.append(clock.now)
+
+        gaps = [b - a for a, b in zip(starts, starts[1:], strict=False)]
+        assert gaps == [pytest.approx(1.1)] * 3
+
+    def test_no_wait_once_the_spacing_has_passed(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+        clock.advance(1.1)
+
+        gate(None)
+
+        assert clock.sleeps == []
+
+    def test_a_deadline_that_cannot_cover_the_wait_raises_without_sleeping(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+
+        with pytest.raises(UpstreamWaitTimeout, match="spacing"):
+            gate(Deadline(1.0, clock))
+
+        assert clock.sleeps == []
+
+    def test_a_deadline_that_only_just_covers_the_wait_is_refused(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+
+        with pytest.raises(UpstreamWaitTimeout):
+            gate(Deadline(1.1, clock))  # nothing would be left for the request itself
+
+        assert clock.sleeps == []
+
+    def test_exposes_its_spacing(self) -> None:
+        gate, _ = self.make(spacing_s=2.5)
+
+        assert gate.spacing_s == 2.5
+
+    def test_a_refused_request_does_not_use_up_the_turn(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+        with pytest.raises(UpstreamWaitTimeout):
+            gate(Deadline(0.5, clock))
+
+        clock.advance(1.1)
+        gate(None)
+
+        assert clock.sleeps == []
+
+    def test_a_deadline_with_room_waits_normally(self) -> None:
+        gate, clock = self.make()
+        gate(None)
+
+        gate(Deadline(5.0, clock))
+
+        assert clock.sleeps == [pytest.approx(1.1)]
+
+    def test_concurrent_callers_take_turns(self) -> None:
+        gate, _ = self.make()
+        starts: list[float] = []
+        lock = threading.Lock()
+
+        def call() -> None:
+            gate(None)
+            with lock:
+                starts.append(gate._clock())  # noqa: SLF001
+
+        threads = [threading.Thread(target=call) for _ in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        ordered = sorted(starts)
+        assert all(b - a >= 1.1 - 1e-9 for a, b in zip(ordered, ordered[1:], strict=False))
