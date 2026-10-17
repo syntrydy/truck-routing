@@ -16,7 +16,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - uv project (Python 3.12), Django 5, DRF, drf-spectacular, django-environ, django-cors-headers; `config/settings.py` fully env-driven; app `planner`; `GET /api/health` → `{"status":"ok"}`; `/api/schema/`.
   - AC: `uv run python manage.py check` passes; `.env.example` documents every variable; health test passes.
 
-- [ ] **B-03 chore(backend): lint, type, test and security tooling** — `type:chore` `area:backend`
+- [x] **B-03 chore(backend): lint, type, test and security tooling — #5** — `type:chore` `area:backend`
   - ruff (rules: E, F, W, I, B, UP, S, SIM, RET, PL, PT, N, C4, DTZ, ERA), ruff format, mypy (strict for `planner.domain` and `planner.providers`), pytest + pytest-django + pytest-cov + respx + hypothesis, bandit, pip-audit. Root `Makefile` targets: `be-lint`, `be-type`, `be-test`, `be-sec`, `check`.
   - AC: `make check` green on the empty project; coverage report generated.
 
