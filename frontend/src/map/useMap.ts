@@ -3,14 +3,17 @@ import { useEffect, useState, type RefObject } from "react";
 
 import { ATTRIBUTION, INITIAL_CENTER, INITIAL_ZOOM, MAP_STYLE_URL } from "./config.ts";
 
+type MapLibre = typeof import("maplibre-gl");
+
 export type MapState =
   | { status: "loading"; map: null }
-  | { status: "ready"; map: MapLibreMap }
+  /** `maplibre` is the library itself, for the classes other hooks need (popups, markers). */
+  | { status: "ready"; map: MapLibreMap; maplibre: MapLibre }
   | { status: "error"; map: null; error: Error };
 
 const LOADING: MapState = { status: "loading", map: null };
 
-let loading: Promise<typeof import("maplibre-gl")> | undefined;
+let loading: Promise<MapLibre> | undefined;
 
 /**
  * MapLibre and its stylesheet, fetched on first use so they stay out of the first bundle.
@@ -58,7 +61,7 @@ export function useMap(container: RefObject<HTMLElement | null>): MapState {
           new maplibre.AttributionControl({ compact: false, customAttribution: [...ATTRIBUTION] }),
         );
         created.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
-        setState({ status: "ready", map: created });
+        setState({ status: "ready", map: created, maplibre });
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
