@@ -28,7 +28,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Workflow on PR + push to main: backend job (uv sync --frozen, ruff check, ruff format --check, mypy, pytest with coverage gate, bandit, pip-audit, `manage.py check --deploy` with prod-like env); frontend job (npm ci, typecheck, eslint, vitest, build, `npm audit --audit-level=high`); gitleaks job. CodeQL workflow (python, javascript-typescript). `dependabot.yml` weekly for pip/uv, npm, github-actions. Concurrency group cancels superseded runs. Actions pinned to major versions.
   - AC: CI green on this PR; failing lint demonstrably fails the job (verified then reverted locally).
 
-- [ ] **B-06 chore: pre-commit hooks** — `type:chore` `area:infra`
+- [x] **B-06 chore: pre-commit hooks — #11** — `type:chore` `area:infra`
   - `.pre-commit-config.yaml`: ruff, ruff-format, mypy (domain/providers), prettier, eslint (frontend changes), gitleaks, check-yaml, check-json, end-of-file-fixer, trailing-whitespace, detect-private-key, check-added-large-files. README "Development" section explains `pre-commit install`.
   - AC: `pre-commit run --all-files` passes.
 
