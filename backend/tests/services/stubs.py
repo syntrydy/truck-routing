@@ -17,21 +17,22 @@ START = LatLon(40.0, -105.0)
 SECONDS_PER_HOUR = 3_600
 
 
-def route(
+def route(  # noqa: PLR0913 - keyword-only test builder with defaults
     length_mi: float,
     mph: float,
     *,
     origin: LatLon = START,
     bearing: float = 90.0,
     delay_share: float = 0.03,
+    step_m: float = 5_000.0,
 ) -> ProviderRoute:
-    """A straight route of ``length_mi`` driven at ``mph``, with a vertex every 5 km.
+    """A straight route of ``length_mi`` driven at ``mph``, with a vertex every ``step_m``.
 
     Segment times add up to ``1 / (1 + delay_share)`` of the route's own duration, like OSRM,
     whose annotations leave out turn and signal delays.
     """
     length_m = length_mi * METERS_PER_MILE
-    count = max(int(length_m // 5_000), 1)
+    count = max(int(length_m // step_m), 1)
     points = tuple(
         destination_point(origin, bearing, length_m * i / count) for i in range(count + 1)
     )

@@ -106,7 +106,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `services/plan.py` wiring providers + domain end to end; `services/container.py` DI from settings; deadline budget per request; partial weather failure path; notes and banners.
   - AC: service test on fixtures returns full result; weather outage → UNKNOWN + `WEATHER_UNAVAILABLE`; routing outage → typed error.
 
-- [ ] **B-24 feat(api): POST /api/plan with validation and error mapping** — `type:feat` `area:backend`
+- [x] **B-24 feat(api): POST /api/plan with validation and error mapping — #58** — `type:feat` `area:backend`
   - DRF serializers per SPEC §5, error envelope, status mapping, drf-spectacular annotations, response compaction (geometry simplified, floats rounded).
   - AC: API tests for each validation rule and each error code; schema contains request/response components; payload for fixture trip ≤ 300 KB gzipped.
 

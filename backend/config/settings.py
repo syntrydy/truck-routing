@@ -22,6 +22,8 @@ SECRET_KEY = env("SECRET_KEY", default="insecure-dev-key" if DEBUG else environ.
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+# Headers the frontend may read: the request ID for support, Retry-After after a 429.
+CORS_EXPOSE_HEADERS = ["X-Request-ID", "Retry-After"]
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # Disposable cache shared by the API workers: in-process memory unless REDIS_URL is set.
@@ -63,6 +65,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "planner.api.middleware.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -99,6 +102,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "UNAUTHENTICATED_USER": None,
+    "EXCEPTION_HANDLER": "planner.api.errors.api_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
@@ -106,4 +110,9 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Safest-route planning for trucks based on weather along the route.",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # One name for each choice list that several fields share.
+    "ENUM_NAME_OVERRIDES": {
+        "RiskLevelEnum": "planner.api.serializers.LEVELS",
+        "BannerEnum": "planner.api.serializers.BANNERS",
+    },
 }
