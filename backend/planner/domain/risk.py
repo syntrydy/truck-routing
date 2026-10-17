@@ -7,12 +7,12 @@ value is ``UNKNOWN``, never ``LOW``.
 """
 
 import math
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import NamedTuple
 
-from planner.domain.models import RiskLevel, WeatherSample, is_known, max_known
+from planner.domain.models import RiskLevel, WeatherSample, combine_levels, is_known, max_known
 
 
 class Edge(NamedTuple):
@@ -171,7 +171,7 @@ def assess(
         Factor.SNOW: snow_level,
     }
     return Assessment(
-        level=_overall_level(factor_levels.values()),
+        level=combine_levels(factor_levels.values()),
         factor_levels=factor_levels,
         reasons=tuple(reasons),
     )
@@ -183,16 +183,6 @@ def _triggered_load_rules(wind_mph: float, load_lb: float) -> list[LoadRule]:
         for rule in LOAD_RULES
         if rule.wind_from_mph <= wind_mph < rule.wind_below_mph and load_lb > rule.load_above_lb
     ]
-
-
-def _overall_level(levels: Iterable[RiskLevel]) -> RiskLevel:
-    """Max known level, or UNKNOWN when a factor is UNKNOWN and nothing known is SEVERE+."""
-    levels = list(levels)
-    known_max = max_known(levels)
-    has_unknown = not all(is_known(level) for level in levels)
-    if has_unknown and (not is_known(known_max) or known_max < RiskLevel.SEVERE):
-        return RiskLevel.UNKNOWN
-    return known_max
 
 
 def _add_factor_reason(reasons: list[str], text: str, level: RiskLevel) -> None:

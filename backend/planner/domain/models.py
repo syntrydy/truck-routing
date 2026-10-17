@@ -46,6 +46,21 @@ def max_known(levels: Iterable[RiskLevel]) -> RiskLevel:
     return max(known, default=RiskLevel.UNKNOWN)
 
 
+def combine_levels(levels: Iterable[RiskLevel]) -> RiskLevel:
+    """Overall level of several levels (SPEC section 4.5): the worst, with an UNKNOWN policy.
+
+    If any level is UNKNOWN and the worst known level is below SEVERE, the result is
+    UNKNOWN: an outage can never read as LOW. A known SEVERE or NO_TRAVEL is kept, so an
+    outage can never hide known danger.
+    """
+    levels = list(levels)
+    worst_known = max_known(levels)
+    has_unknown = not all(is_known(level) for level in levels)
+    if has_unknown and (not is_known(worst_known) or worst_known < RiskLevel.SEVERE):
+        return RiskLevel.UNKNOWN
+    return worst_known
+
+
 @dataclass(frozen=True, slots=True)
 class LatLon:
     """A WGS84 coordinate in decimal degrees."""

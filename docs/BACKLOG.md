@@ -58,7 +58,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/weather_select.py`: preceding-hour rule for precipitation, linear wind interpolation, `rain + showers`, out-of-range/null → None.
   - AC: tests for ETA exactly on the hour, 14:20 picks 15:00 precipitation, beyond series → None, nulls.
 
-- [ ] **B-13 feat(domain): route scoring** — `type:feat` `area:backend`
+- [x] **B-13 feat(domain): route scoring — #27** — `type:feat` `area:backend`
   - `domain/scoring.py`: stretch level = worse endpoint; miles by level; unknown miles; distance-weighted avg risk; worst level; low-confidence flag.
   - AC: hand-computed fixtures; unknown miles excluded from average and never counted as LOW.
 
