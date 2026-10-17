@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { ApiProvider, createDefaultApiClient } from "./api/ApiProvider.tsx";
 import { createQueryClient } from "./api/queryClient.ts";
 import { App } from "./App.tsx";
+import "./styles.css";
 
 const apiClient = createDefaultApiClient();
 const queryClient = createQueryClient();

@@ -124,7 +124,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Generate types with openapi-typescript (`npm run gen:api` from a checked-in schema file); fetch wrapper with timeout, error envelope parsing, request id surfaced; TanStack Query setup; `/api/health` warm-up on load.
   - AC: tests for error parsing and timeout; generated types committed and CI checks they are up to date.
 
-- [ ] **B-28 feat(web): app shell and map** — `type:feat` `area:frontend`
+- [x] **B-28 feat(web): app shell and map** — #66 — `type:feat` `area:frontend`
   - Layout (panel + map + slider slot), MapLibre lazy-loaded, OpenFreeMap style, attribution control, `useMap` hook creating the map once.
   - AC: map renders; no re-creation on state change (test or dev assertion); attribution visible.
 
