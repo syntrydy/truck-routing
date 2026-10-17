@@ -46,7 +46,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `assess(sample, load_lb, wind_basis) -> Assessment(level, factor_levels, reasons)`; load rules in order; UNKNOWN policy per SPEC §4.5; reason strings formatted consistently.
   - AC: tests for 47 mph × {30,000, 30,001} lb, 40 mph × {40,000, 40,001} lb, 55 mph × 0 lb, UNKNOWN rain with SEVERE wind stays SEVERE, UNKNOWN rain with LOW wind becomes UNKNOWN; gust basis switch.
 
-- [ ] **B-10 feat(domain): geometry utilities** — `type:feat` `area:backend`
+- [x] **B-10 feat(domain): geometry utilities — #21** — `type:feat` `area:backend`
   - `domain/geometry.py`: haversine, cumulative distances, point-at-distance interpolation, bearing, perpendicular offset, Douglas-Peucker simplification (tolerance in meters), point-to-polyline distance.
   - AC: tests against known distances (±0.5%); simplification keeps endpoints; property test: interpolated point distance monotonic.
 
