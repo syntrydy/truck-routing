@@ -7,6 +7,7 @@ from hypothesis import strategies as st
 from planner.domain.geometry import (
     EARTH_RADIUS_M,
     METERS_PER_MILE,
+    ProximityIndex,
     bearing_deg,
     cumulative_distances_m,
     destination_point,
@@ -14,6 +15,7 @@ from planner.domain.geometry import (
     haversine_m,
     perpendicular_offset,
     point_at_distance,
+    sample_along,
     simplify,
 )
 from planner.domain.models import LatLon
@@ -388,3 +390,79 @@ class TestSimplify:
         assert all(point in line for point in simplified)
         for point in line:
             assert distance_to_polyline_m(point, simplified) <= tolerance_m * 1.02 + 1.0
+
+
+class TestSampleAlong:
+    LINE = (ORIGIN, LatLon(0.0, 1.0))  # about 111.2 km
+
+    def test_samples_every_spacing_and_ends_at_the_last_point(self) -> None:
+        samples = sample_along(self.LINE, 50_000.0)
+
+        assert samples[0] == ORIGIN
+        assert samples[-1] == self.LINE[-1]
+        assert len(samples) == 4  # 0, 50, 100 km and the end
+        assert haversine_m(samples[0], samples[1]) == pytest.approx(50_000.0, rel=0.005)
+
+    def test_an_exact_multiple_does_not_repeat_the_end(self) -> None:
+        total = cumulative_distances_m(self.LINE)[-1]
+
+        samples = sample_along(self.LINE, total / 2)
+
+        assert len(samples) == 3
+        assert samples[-1] == self.LINE[-1]
+
+    def test_route_shorter_than_the_spacing_has_both_ends(self) -> None:
+        assert sample_along(self.LINE, 500_000.0) == [ORIGIN, self.LINE[-1]]
+
+    def test_single_point_route(self) -> None:
+        assert sample_along([NEW_YORK], 1_000.0) == [NEW_YORK]
+
+
+class TestProximityIndex:
+    NORTH_SOUTH = (LatLon(40.0, -100.0), LatLon(41.0, -100.0))
+
+    def index(self, radius_m: float = 5_000.0) -> ProximityIndex:
+        return ProximityIndex([self.NORTH_SOUTH], radius_m, spacing_m=radius_m / 5)
+
+    @pytest.mark.parametrize("offset_m", [0.0, 1_000.0, 4_800.0])
+    def test_points_within_the_radius_are_near_on_either_side(self, offset_m: float) -> None:
+        index = self.index()
+        middle = LatLon(40.5, -100.0)
+
+        assert index.is_near(destination_point(middle, 90.0, offset_m))
+        assert index.is_near(destination_point(middle, 270.0, offset_m))
+
+    @pytest.mark.parametrize("offset_m", [5_300.0, 20_000.0])
+    def test_points_beyond_the_radius_are_not_near(self, offset_m: float) -> None:
+        index = self.index()
+
+        assert not index.is_near(destination_point(LatLon(40.5, -100.0), 90.0, offset_m))
+
+    def test_points_beyond_the_ends_use_the_end_distance(self) -> None:
+        index = self.index()
+
+        assert index.is_near(destination_point(self.NORTH_SOUTH[-1], 0.0, 4_000.0))
+        assert not index.is_near(destination_point(self.NORTH_SOUTH[-1], 0.0, 6_000.0))
+
+    def test_east_west_distances_account_for_latitude(self) -> None:
+        index = ProximityIndex([[LatLon(60.0, 10.0), LatLon(61.0, 10.0)]], 5_000.0, 1_000.0)
+
+        assert index.is_near(destination_point(LatLon(60.5, 10.0), 90.0, 4_500.0))
+        assert not index.is_near(destination_point(LatLon(60.5, 10.0), 90.0, 5_500.0))
+
+    def test_indexes_several_polylines_together(self) -> None:
+        other = [LatLon(10.0, 10.0), LatLon(10.0, 11.0)]
+        index = ProximityIndex([self.NORTH_SOUTH, other], 5_000.0, 1_000.0)
+
+        assert index.is_near(LatLon(10.0, 10.5))
+        assert index.is_near(LatLon(40.5, -100.0))
+        assert not index.is_near(LatLon(25.0, 0.0))
+
+    @pytest.mark.parametrize(("radius", "spacing"), [(0.0, 1.0), (1.0, 0.0), (-1.0, 1.0)])
+    def test_rejects_non_positive_radius_or_spacing(self, radius: float, spacing: float) -> None:
+        with pytest.raises(ValueError, match="positive"):
+            ProximityIndex([self.NORTH_SOUTH], radius, spacing)
+
+    def test_rejects_an_empty_set_of_polylines(self) -> None:
+        with pytest.raises(ValueError, match="no polylines"):
+            ProximityIndex([], 1_000.0, 100.0)
