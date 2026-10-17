@@ -42,7 +42,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `domain/risk.py`: band tables as data; `classify_wind`, `classify_rain`, `classify_snow` per SPEC §4.5 boundaries; `None` → UNKNOWN.
   - AC: parameterized tests at every edge (e.g. 24.99/25, 34.99/35, 0.0999/0.10, 1.00/1.0001, 2.99/3.0/3.0001); hypothesis test that classification is monotonic non-decreasing.
 
-- [ ] **B-09 feat(domain): load rules, checkpoint level and reasons** — `type:feat` `area:backend`
+- [x] **B-09 feat(domain): load rules, checkpoint level and reasons — #19** — `type:feat` `area:backend`
   - `assess(sample, load_lb, wind_basis) -> Assessment(level, factor_levels, reasons)`; load rules in order; UNKNOWN policy per SPEC §4.5; reason strings formatted consistently.
   - AC: tests for 47 mph × {30,000, 30,001} lb, 40 mph × {40,000, 40,001} lb, 55 mph × 0 lb, UNKNOWN rain with SEVERE wind stays SEVERE, UNKNOWN rain with LOW wind becomes UNKNOWN; gust basis switch.
 
