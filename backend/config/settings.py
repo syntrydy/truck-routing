@@ -49,6 +49,17 @@ UPSTREAM_ALLOWED_HOSTS = env.list(
 # It is a secret: keep it in the environment, never in the repository.
 ORS_API_KEY = env("ORS_API_KEY", default="")
 
+# Per-client rate limits, counted in the cache (SPEC section 6). With per-process memory
+# (no REDIS_URL) each worker counts separately, so the effective limit is higher.
+RATELIMIT_ENABLE = env.bool("RATE_LIMIT_ENABLED", default=True)
+RATELIMIT_USE_CACHE = "default"
+RATELIMIT_IP_META_KEY = "planner.api.ratelimit.client_ip"
+PLAN_RATE_LIMIT = env("PLAN_RATE_LIMIT", default="10/m")
+GEOCODE_RATE_LIMIT = env("GEOCODE_RATE_LIMIT", default="60/m")
+# How many reverse proxies sit in front of the API and append to X-Forwarded-For (Render: 1).
+# Leave 0 when clients connect directly: the header is then ignored, as anyone can forge it.
+TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=0)
+
 # Trip planning (SPEC sections 4.2 and 4.5).
 TRUCK_MAX_SPEED_MPH = env.float("TRUCK_MAX_SPEED_MPH", default=65.0)
 # Which wind drives risk and the load rules: "sustained" (the brief's table) or "gust".

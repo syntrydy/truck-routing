@@ -2,6 +2,8 @@
 
 from datetime import UTC, datetime
 
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,6 +11,7 @@ from rest_framework.views import APIView
 
 from planner.api.middleware import get_request_id
 from planner.api.presenters import present_plan
+from planner.api.ratelimit import plan_rate
 from planner.api.serializers import (
     ErrorEnvelopeSerializer,
     HealthSerializer,
@@ -36,6 +39,9 @@ def _error(description: str) -> OpenApiResponse:
     return OpenApiResponse(ErrorEnvelopeSerializer, description=description)
 
 
+@method_decorator(
+    ratelimit(group="plan", key="ip", rate=plan_rate, method="POST", block=True), name="post"
+)
 class PlanView(APIView):
     """Plan a trip: up to three routes with weather risk along each, and a recommendation."""
 

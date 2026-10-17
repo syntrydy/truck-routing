@@ -1,6 +1,5 @@
 import json
-from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -9,7 +8,6 @@ from rest_framework.test import APIClient
 
 from planner.api.serializers import ErrorEnvelopeSerializer, PlanResponseSerializer
 from planner.domain.geometry import destination_point
-from planner.domain.risk import WindBasis
 from planner.infra.errors import (
     UpstreamContractError,
     UpstreamError,
@@ -17,74 +15,15 @@ from planner.infra.errors import (
     UpstreamUnavailable,
 )
 from planner.providers.protocols import NoRoute
-from planner.services.plan import PlanService
-from tests.infra.fakes import FakeClock
-from tests.services.stubs import START, StubRouting, StubWeather, route
-
-NOW = datetime(2026, 10, 17, 12, 0, tzinfo=UTC)
-ORIGIN = {"lat": START.lat, "lon": START.lon, "label": "Boulder, CO"}
-DESTINATION = {
-    "lat": destination_point(START, 90.0, 96_000).lat,
-    "lon": destination_point(START, 90.0, 96_000).lon,
-    "label": "East of Boulder",
-}
-
-
-def valid_body(**changes: Any) -> dict[str, Any]:
-    values: dict[str, Any] = {
-        "origin": ORIGIN,
-        "destination": DESTINATION,
-        "departure_at": "2026-10-18T14:00:00Z",
-        "load_lb": 42_000,
-        "interval_mi": 25,
-    }
-    for key, value in changes.items():
-        if value is ...:
-            del values[key]
-        else:
-            values[key] = value
-    return values
-
-
-def three_routes() -> list[Any]:
-    return [
-        route(60, 55),
-        route(62, 52, origin=destination_point(START, 0.0, 20_000)),
-        route(65, 50, origin=destination_point(START, 180.0, 20_000)),
-    ]
-
-
-@pytest.fixture
-def install(monkeypatch: pytest.MonkeyPatch) -> Any:  # noqa: ANN401
-    """Install a plan service with scripted providers behind the endpoint."""
-
-    def install_service(
-        routing: StubRouting | None = None, weather: StubWeather | None = None
-    ) -> PlanService:
-        service = PlanService(
-            routing or StubRouting(three_routes()),
-            weather or StubWeather(),
-            max_speed_mph=65.0,
-            wind_basis=WindBasis.SUSTAINED,
-            now=lambda: NOW,
-            monotonic=FakeClock(),
-        )
-        monkeypatch.setattr(
-            "planner.api.views.get_container", lambda: SimpleNamespace(plan_service=service)
-        )
-        monkeypatch.setattr("planner.api.views.utc_now", lambda: NOW)
-        return service
-
-    return install_service
-
-
-@pytest.fixture
-def client() -> APIClient:
-    return APIClient()
-
-
-def post(client: APIClient, body: Any, **extra: Any) -> Any:  # noqa: ANN401
-    return client.post("/api/plan", data=json.dumps(body), content_type="application/json", **extra)
+from tests.api.helpers import (
+    DESTINATION,
+    NOW,
+    ORIGIN,
+    post,
+    three_routes,
+    valid_body,
+)
+from tests.services.stubs import START, StubRouting, StubWeather
 
 
 class TestASuccessfulPlan:
