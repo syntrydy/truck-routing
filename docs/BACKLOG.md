@@ -12,7 +12,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Create `backend/`, `frontend/`, `docs/`, `.github/`; MIT `LICENSE`; `.editorconfig`; `.gitignore` (Python, Node, env files, OS junk); `README.md` skeleton (title, one-line pitch, sections to fill later).
   - AC: tree matches SPEC §10 top level; `.env*` ignored except `.env.example`.
 
-- [ ] **B-02 chore(backend): Django + DRF project with env settings and health endpoint** — `type:chore` `area:backend`
+- [x] **B-02 chore(backend): Django + DRF project with env settings and health endpoint — #3** — `type:chore` `area:backend`
   - uv project (Python 3.12), Django 5, DRF, drf-spectacular, django-environ, django-cors-headers; `config/settings.py` fully env-driven; app `planner`; `GET /api/health` → `{"status":"ok"}`; `/api/schema/`.
   - AC: `uv run python manage.py check` passes; `.env.example` documents every variable; health test passes.
 
