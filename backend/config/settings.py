@@ -43,6 +43,10 @@ UPSTREAM_ALLOWED_HOSTS = env.list(
     ],
 )
 
+# Optional openrouteservice key. When set, openrouteservice is the routing fallback behind OSRM.
+# It is a secret: keep it in the environment, never in the repository.
+ORS_API_KEY = env("ORS_API_KEY", default="")
+
 # The API is stateless: no database, sessions or auth apps.
 DATABASES: dict[str, dict[str, str]] = {}
 
