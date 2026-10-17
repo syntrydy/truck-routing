@@ -76,7 +76,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M2 — Infrastructure and providers
 
-- [ ] **B-17 feat(infra): resilient HTTP client** — `type:feat` `area:backend`
+- [x] **B-17 feat(infra): resilient HTTP client — #35** — `type:feat` `area:backend`
   - `infra/http.py`: shared httpx client, per-provider timeouts, retry with full-jitter backoff (5xx/429/connect only), circuit breaker (3 failures, 60 s), deadline budget context, bulkhead semaphores, host allowlist, User-Agent from settings, typed exceptions (`UpstreamTimeout`, `UpstreamUnavailable`, `UpstreamError`, `UpstreamContractError`).
   - AC: respx tests for timeout, retry-then-success, no retry on 400, breaker opens and half-opens (time injected, no sleeps), deadline exhaustion, non-allowlisted host rejected.
 

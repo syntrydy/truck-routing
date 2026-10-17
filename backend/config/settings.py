@@ -22,6 +22,22 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
+# Outbound calls to upstream providers (SPEC sections 6 and 8): only these hosts, over https.
+UPSTREAM_USER_AGENT = env(
+    "UPSTREAM_USER_AGENT",
+    default="WeatherAwareTruckRouting/0.1 (+https://github.com/syntrydy/truck-routing)",
+)
+UPSTREAM_ALLOWED_HOSTS = env.list(
+    "UPSTREAM_ALLOWED_HOSTS",
+    default=[
+        "router.project-osrm.org",
+        "api.openrouteservice.org",
+        "api.open-meteo.com",
+        "photon.komoot.io",
+        "nominatim.openstreetmap.org",
+    ],
+)
+
 # The API is stateless: no database, sessions or auth apps.
 DATABASES: dict[str, dict[str, str]] = {}
 
