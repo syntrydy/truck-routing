@@ -26,7 +26,7 @@ A React + Django web app that helps a truck driver choose the safest route betwe
 | --- | --- |
 | Backend | Python 3.12, Django 6.x, Django REST Framework, drf-spectacular (OpenAPI), httpx, gunicorn (gthread) |
 | Backend tooling | uv (deps + lockfile), ruff (lint + format, incl. `S` security rules), mypy (strict on `planner/domain` and `planner/providers`), pytest, pytest-django, pytest-cov, respx, hypothesis (boundary/property tests), bandit, pip-audit |
-| Frontend | React 18 + TypeScript (strict) + Vite, MapLibre GL JS, TanStack Query, openapi-typescript (types generated from the backend schema) |
+| Frontend | React 19 + TypeScript (strict) + Vite, MapLibre GL JS, TanStack Query, openapi-typescript (types generated from the backend schema) |
 | Frontend tooling | eslint (typescript-eslint strict-type-checked, react-hooks, jsx-a11y), prettier, vitest + Testing Library, Playwright (one smoke test) |
 | Repo tooling | pre-commit, gitleaks, GitHub Actions, CodeQL, Dependabot |
 | Hosting | Backend on Render (free web service), frontend on Vercel |
