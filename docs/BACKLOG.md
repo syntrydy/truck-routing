@@ -96,7 +96,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Batching ≤ 100 points, ≤ 4 concurrent, unit assertion, per-point caching via B-18, returns hourly series keyed by rounded point.
   - AC: unit mismatch raises contract error; batching splits 250 points into 3 calls; cache prevents second call; stale served on outage.
 
-- [ ] **B-22 feat(providers): geocoding adapters** — `type:feat` `area:backend`
+- [x] **B-22 feat(providers): geocoding adapters — #52** — `type:feat` `area:backend`
   - Photon adapter + Nominatim fallback (1 req/s lock), normalized `Place(label, lat, lon, kind)`, 24 h cache.
   - AC: fixtures; fallback on Photon failure; label includes region and country.
 
