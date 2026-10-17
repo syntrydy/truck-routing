@@ -1,9 +1,13 @@
 """What the application expects from a routing provider, independent of the provider."""
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 from typing import Protocol
 
-from planner.domain.models import LatLon
+from planner.domain.models import HourlySeries, LatLon
+
+WEATHER_GRID_DECIMALS = 1
 
 
 class NoRoute(Exception):  # noqa: N818 - named for the API error code it maps to
@@ -52,4 +56,38 @@ class RoutingProvider(Protocol):
 
     def route_via(self, origin: LatLon, via: LatLon, destination: LatLon) -> RoutingResult:
         """A single route from ``origin`` to ``destination`` passing through ``via``."""
+        ...
+
+
+def rounded_point(point: LatLon) -> LatLon:
+    """The weather grid place for ``point``: weather is looked up per 0.1 degrees."""
+    return LatLon(round(point.lat, WEATHER_GRID_DECIMALS), round(point.lon, WEATHER_GRID_DECIMALS))
+
+
+@dataclass(frozen=True, slots=True)
+class WeatherResult:
+    """Hourly weather for a set of places, keyed by the place rounded to 0.1 degrees.
+
+    A place maps to ``None`` when no weather could be had for it, so the caller reports it
+    as unknown. ``stale`` is true when any series came from the cache after it had stopped
+    being fresh because the provider failed. ``missing`` counts the places without weather.
+    """
+
+    series: Mapping[LatLon, HourlySeries | None]
+    source: str
+    stale: bool = False
+    missing: int = 0
+
+
+class WeatherProvider(Protocol):
+    """A source of hourly weather."""
+
+    name: str
+
+    def hourly(self, points: Sequence[LatLon], first_day: date, last_day: date) -> WeatherResult:
+        """Hourly weather for the UTC days ``first_day`` to ``last_day`` at each place.
+
+        An outage degrades to missing places rather than raising; a response that breaks the
+        agreed units or shape raises ``UpstreamContractError``.
+        """
         ...
