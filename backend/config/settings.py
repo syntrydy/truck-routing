@@ -47,6 +47,11 @@ UPSTREAM_ALLOWED_HOSTS = env.list(
 # It is a secret: keep it in the environment, never in the repository.
 ORS_API_KEY = env("ORS_API_KEY", default="")
 
+# Trip planning (SPEC sections 4.2 and 4.5).
+TRUCK_MAX_SPEED_MPH = env.float("TRUCK_MAX_SPEED_MPH", default=65.0)
+# Which wind drives risk and the load rules: "sustained" (the brief's table) or "gust".
+RISK_WIND_BASIS = env("RISK_WIND_BASIS", default="sustained")
+
 # The API is stateless: no database, sessions or auth apps.
 DATABASES: dict[str, dict[str, str]] = {}
 

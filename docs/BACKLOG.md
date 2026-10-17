@@ -102,7 +102,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M3 — Application and API
 
-- [ ] **B-23 feat(service): plan orchestration facade** — `type:feat` `area:backend`
+- [x] **B-23 feat(service): plan orchestration facade — #56** — `type:feat` `area:backend`
   - `services/plan.py` wiring providers + domain end to end; `services/container.py` DI from settings; deadline budget per request; partial weather failure path; notes and banners.
   - AC: service test on fixtures returns full result; weather outage → UNKNOWN + `WEATHER_UNAVAILABLE`; routing outage → typed error.
 
