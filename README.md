@@ -18,6 +18,21 @@ _To be filled in._
 
 _To be filled in._
 
+## Development
+
+Prerequisites: git, [uv](https://docs.astral.sh/uv/), Node 20+, make and [pre-commit](https://pre-commit.com/).
+
+```bash
+make check             # everything CI runs (backend and frontend)
+make be-test ARGS="-k health"   # focused backend tests
+pre-commit install     # run the hooks on every commit
+pre-commit run --all-files
+```
+
+The hooks run ruff, mypy, prettier, eslint and gitleaks, plus basic file hygiene checks. ruff, mypy, prettier and eslint come from the project lockfiles, so hook results match CI.
+
+The backend reads its settings from the environment; for local development copy `backend/.env.example` to `backend/.env`.
+
 ## Testing
 
 _To be filled in._
