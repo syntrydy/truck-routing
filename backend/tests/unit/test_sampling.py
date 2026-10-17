@@ -126,6 +126,16 @@ class TestSampleCheckpoints:
         assert [round(c.distance_mi, 3) for c in checkpoints] == [0, 25, 50.0]
         assert checkpoints[-1].distance_mi == pytest.approx(50.0001)
 
+    @pytest.mark.parametrize(("gap_m", "stop_kept"), [(0.5, False), (1.5, True)])
+    def test_a_stop_is_only_dropped_within_a_meter_of_the_destination(
+        self, gap_m: float, stop_kept: bool
+    ) -> None:
+        points = on_equator(0, 50 + gap_m / METERS_PER_MILE)  # the 50-mile stop is gap_m short
+
+        checkpoints = sample_checkpoints(points, steady(points, 50), DEPARTURE, 25)
+
+        assert len(checkpoints) == (4 if stop_kept else 3)
+
     @pytest.mark.parametrize(("interval", "expected_count"), [(10, 11), (25, 5), (50, 3)])
     def test_checkpoint_count_for_a_100_mile_trip(self, interval: int, expected_count: int) -> None:
         points = on_equator(0, 100)

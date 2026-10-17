@@ -76,6 +76,17 @@ class TestBuildGrid:
         finer = _brute_force_count(route, spacing=0.1)
         assert finer > MAX_GRID_POINTS
 
+    def test_exactly_200_points_still_fit_the_finest_grid(self) -> None:
+        grid = build_grid([straight(DENVER, 90.0, 343 * KM)])  # 200 points at 0.1 degrees
+
+        assert (grid.spacing_deg, len(grid.points)) == (0.1, 200)
+
+    def test_201_points_make_the_grid_coarser(self) -> None:
+        grid = build_grid([straight(DENVER, 90.0, 344 * KM)])  # 201 points at 0.1 degrees
+
+        assert grid.spacing_deg == 0.2
+        assert len(grid.points) < 200
+
     def test_spacing_is_a_doubling_of_the_start_spacing(self) -> None:
         for length_km in (30, 400, 1_500):
             spacing = build_grid([straight(DENVER, 90.0, length_km * KM)]).spacing_deg

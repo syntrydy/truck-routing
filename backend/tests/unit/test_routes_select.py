@@ -89,6 +89,19 @@ class TestDeduplication:
 
         assert ids(selection.routes) == ["base", "diverges"]
 
+    @pytest.mark.parametrize(("shared_share", "is_duplicate"), [(0.842, False), (0.845, True)])
+    def test_a_route_is_a_duplicate_when_more_than_85_percent_of_its_samples_are_near(
+        self, shared_share: float, is_duplicate: bool
+    ) -> None:
+        # Measured on this 100 km route: sharing 84.2% leaves 0.8431 of the 1 km samples near
+        # the kept route (kept), sharing 84.5% leaves 0.8515 (a duplicate). Both sit within a
+        # hundredth of the 0.85 threshold, so neighbouring thresholds give a different answer.
+        other = shares_then_leaves("other", shared_share, 3_700.0)
+
+        selection = select_routes([base(), other])
+
+        assert (ids(selection.routes) == ["base"]) is is_duplicate
+
     def test_overlap_is_measured_against_all_kept_routes_together(self) -> None:
         north = parallel("north", 10 * KM, 3_800.0)
         hop = [
