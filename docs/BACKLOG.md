@@ -88,7 +88,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Protocol `RoutingProvider`; OSRM adapter (route with alternatives, route via waypoint), 1.1 s spacing lock, maps response to domain types incl. per-segment annotations and snap distance, NoRoute mapping.
   - AC: recorded fixtures for 3-route, 1-route, NoRoute, malformed JSON; lock spacing verified with injected clock.
 
-- [ ] **B-20 feat(providers): openrouteservice fallback and routing chain** — `type:feat` `area:backend`
+- [x] **B-20 feat(providers): openrouteservice fallback and routing chain — #48** — `type:feat` `area:backend`
   - ORS `driving-hgv` adapter (only when `ORS_API_KEY` set); `FallbackRoutingProvider` chain; `meta.routing_source` reflects provider used.
   - AC: chain falls through on `UpstreamUnavailable`; skipped when no key; fixtures only.
 

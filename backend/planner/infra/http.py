@@ -68,6 +68,14 @@ OSRM_MIN_SPACING_S = 1.1
 _OSRM_SPACING = MinSpacing(OSRM_MIN_SPACING_S, "osrm")
 
 
+def _decode(provider: str, response: httpx.Response) -> Any:  # noqa: ANN401
+    try:
+        return response.json()
+    except ValueError as error:
+        msg = "response is not valid JSON"
+        raise UpstreamContractError(provider, msg) from error
+
+
 def default_policies() -> list[ProviderPolicy]:
     """The provider policies of SPEC section 6."""
     return [
@@ -77,6 +85,15 @@ def default_policies() -> list[ProviderPolicy]:
         ProviderPolicy("photon", GEOCODE_TIMEOUT_S, max_concurrency=2),
         ProviderPolicy("nominatim", GEOCODE_TIMEOUT_S, max_concurrency=2),
     ]
+
+
+@dataclass(frozen=True, slots=True)
+class _Request:
+    method: str
+    url: str
+    params: Mapping[str, Any] | None = None
+    json: Any = None
+    headers: Mapping[str, str] | None = None
 
 
 class _ProviderState:
@@ -121,15 +138,28 @@ class UpstreamClient:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
         deadline: Deadline | None = None,
     ) -> Any:  # noqa: ANN401 - decoded JSON has no useful static type
         """GET ``url`` and decode the JSON body."""
-        response = self.get(provider, url, params=params, deadline=deadline)
-        try:
-            return response.json()
-        except ValueError as error:
-            msg = "response is not valid JSON"
-            raise UpstreamContractError(provider, msg) from error
+        response = self.get(provider, url, params=params, headers=headers, deadline=deadline)
+        return _decode(provider, response)
+
+    def post_json(  # noqa: PLR0913 - a request is naturally described by these parts
+        self,
+        provider: str,
+        url: str,
+        *,
+        json: Any,  # noqa: ANN401 - any JSON-serialisable body
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        deadline: Deadline | None = None,
+    ) -> Any:  # noqa: ANN401 - decoded JSON has no useful static type
+        """POST ``json`` to ``url`` and decode the JSON body."""
+        response = self.post(
+            provider, url, json=json, params=params, headers=headers, deadline=deadline
+        )
+        return _decode(provider, response)
 
     def get(
         self,
@@ -137,6 +167,7 @@ class UpstreamClient:
         url: str,
         *,
         params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
         deadline: Deadline | None = None,
     ) -> httpx.Response:
         """GET ``url`` from ``provider`` and return a successful response.
@@ -145,18 +176,38 @@ class UpstreamClient:
         breaker is open or the provider keeps failing, ``UpstreamTimeout`` when time runs
         out, and ``UpstreamError`` when the provider rejects the request.
         """
+        return self._send(provider, _Request("GET", url, params, None, headers), deadline)
+
+    def post(  # noqa: PLR0913 - a request is naturally described by these parts
+        self,
+        provider: str,
+        url: str,
+        *,
+        json: Any,  # noqa: ANN401 - any JSON-serialisable body
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        deadline: Deadline | None = None,
+    ) -> httpx.Response:
+        """POST a JSON body to ``url``; same behaviour and errors as ``get``.
+
+        Only for providers where POST is a read (such as routing queries): it is retried like
+        a GET. Header values (for example an API key) are never logged or put in errors.
+        """
+        return self._send(provider, _Request("POST", url, params, json, headers), deadline)
+
+    def _send(self, provider: str, request: _Request, deadline: Deadline | None) -> httpx.Response:
         state = self._providers.get(provider)
         if state is None:
             msg = f"unknown provider {provider!r}"
             raise ValueError(msg)
-        self._check_url(url)
+        self._check_url(request.url)
         deadline = deadline or current_deadline()
 
         if not state.breaker.allow():
             msg = "circuit open"
             raise UpstreamUnavailable(provider, msg)
         try:
-            response = self._send_with_retries(state, url, params, deadline)
+            response = self._send_with_retries(state, request, deadline)
         except UpstreamWaitTimeout:
             state.breaker.release()
             raise
@@ -183,11 +234,7 @@ class UpstreamClient:
             raise HostNotAllowed(msg)
 
     def _send_with_retries(
-        self,
-        state: _ProviderState,
-        url: str,
-        params: Mapping[str, Any] | None,
-        deadline: Deadline | None,
+        self, state: _ProviderState, request: _Request, deadline: Deadline | None
     ) -> httpx.Response:
         policy = state.policy
         last_failure: UpstreamUnavailable | None = None
@@ -198,7 +245,7 @@ class UpstreamClient:
                     break
                 self._sleep(delay)
             try:
-                response, failure = self._attempt(state, url, params, deadline)
+                response, failure = self._attempt(state, request, deadline)
             except UpstreamWaitTimeout:
                 if last_failure is None:
                     raise
@@ -213,11 +260,7 @@ class UpstreamClient:
         raise last_failure
 
     def _attempt(
-        self,
-        state: _ProviderState,
-        url: str,
-        params: Mapping[str, Any] | None,
-        deadline: Deadline | None,
+        self, state: _ProviderState, request: _Request, deadline: Deadline | None
     ) -> tuple[httpx.Response | None, UpstreamUnavailable | None]:
         """One request. Returns the response, or the retryable failure."""
         policy = state.policy
@@ -237,10 +280,12 @@ class UpstreamClient:
             if timeout_s is None:
                 msg = "request deadline exhausted"
                 raise UpstreamWaitTimeout(policy.name, msg)
-            response = self._http.get(
-                url,
-                params=params,
-                headers={"User-Agent": self._user_agent},
+            response = self._http.request(
+                request.method,
+                request.url,
+                params=request.params,
+                json=request.json,
+                headers={**(request.headers or {}), "User-Agent": self._user_agent},
                 timeout=httpx.Timeout(timeout_s, connect=min(policy.connect_timeout_s, timeout_s)),
             )
         except (httpx.ConnectTimeout, httpx.ConnectError) as error:

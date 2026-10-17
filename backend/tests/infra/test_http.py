@@ -1,3 +1,5 @@
+import json
+import logging
 from collections.abc import Iterator
 from typing import Any
 
@@ -695,6 +697,114 @@ class TestGates:
         assert gate is second._gates["osrm"]  # noqa: SLF001
         assert isinstance(gate, MinSpacing)
         assert gate.spacing_s == 1.1
+
+
+class TestPostAndHeaders:
+    def test_post_sends_the_json_body_and_the_user_agent(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.post(OSRM_URL).respond(200, json=OK)
+
+        response = make_client(clock).post("osrm", OSRM_URL, json={"coordinates": [[1, 2]]})
+
+        request = route.calls.last.request
+        assert response.json() == OK
+        assert request.method == "POST"
+        assert json.loads(request.content) == {"coordinates": [[1, 2]]}
+        assert request.headers["User-Agent"] == USER_AGENT
+        assert request.headers["Content-Type"] == "application/json"
+
+    def test_post_json_decodes_the_reply(self, api: respx.MockRouter, clock: FakeClock) -> None:
+        api.post(OSRM_URL).respond(200, json=OK)
+
+        assert make_client(clock).post_json("osrm", OSRM_URL, json={}) == OK
+
+    def test_post_json_rejects_a_reply_that_is_not_json(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.post(OSRM_URL).respond(200, text="<html>")
+
+        with pytest.raises(UpstreamContractError, match="not valid JSON"):
+            make_client(clock).post_json("osrm", OSRM_URL, json={})
+
+    def test_a_retried_post_sends_the_same_body_again(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.post(OSRM_URL).mock(
+            side_effect=[httpx.Response(503), httpx.Response(200, json=OK)]
+        )
+
+        make_client(clock).post("osrm", OSRM_URL, json={"a": 1})
+
+        assert route.call_count == 2
+        assert [json.loads(call.request.content) for call in route.calls] == [{"a": 1}] * 2
+
+    def test_a_rejected_post_exposes_status_and_body(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.post(OSRM_URL).respond(404, json={"error": {"code": 2009}})
+
+        with pytest.raises(UpstreamError) as raised:
+            make_client(clock).post("osrm", OSRM_URL, json={})
+
+        assert raised.value.status == 404
+        assert raised.value.body is not None
+        assert "2009" in raised.value.body
+
+    def test_get_accepts_extra_headers(self, api: respx.MockRouter, clock: FakeClock) -> None:
+        route = api.get(OSRM_URL).respond(200, json=OK)
+
+        make_client(clock).get("osrm", OSRM_URL, headers={"Authorization": "token"})
+
+        assert route.calls.last.request.headers["Authorization"] == "token"
+
+    def test_get_json_passes_headers_on(self, api: respx.MockRouter, clock: FakeClock) -> None:
+        route = api.get(OSRM_URL).respond(200, json=OK)
+
+        make_client(clock).get_json("osrm", OSRM_URL, headers={"Authorization": "token"})
+
+        assert route.calls.last.request.headers["Authorization"] == "token"
+
+    def test_a_caller_cannot_override_the_user_agent(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.get(OSRM_URL).respond(200, json=OK)
+
+        make_client(clock).get("osrm", OSRM_URL, headers={"User-Agent": "something-else"})
+
+        assert route.calls.last.request.headers["User-Agent"] == USER_AGENT
+
+    @pytest.mark.parametrize(
+        "outcome",
+        [
+            httpx.Response(503),
+            httpx.Response(400, text="bad"),
+            httpx.ReadTimeout("slow"),
+            httpx.ConnectError("refused"),
+        ],
+        ids=["unavailable", "rejected", "timeout", "connect-error"],
+    )
+    def test_header_values_never_reach_logs_or_errors(
+        self,
+        api: respx.MockRouter,
+        clock: FakeClock,
+        caplog: pytest.LogCaptureFixture,
+        outcome: httpx.Response | Exception,
+    ) -> None:
+        sentinel = "NOT-A-REAL-CREDENTIAL-1234"
+        route = api.post(OSRM_URL)
+        if isinstance(outcome, Exception):
+            route.mock(side_effect=outcome)
+        else:
+            route.mock(return_value=outcome)
+
+        with caplog.at_level(logging.DEBUG), pytest.raises(UpstreamError) as raised:
+            make_client(clock).post("osrm", OSRM_URL, json={}, headers={"Authorization": sentinel})
+
+        assert sentinel not in caplog.text
+        assert sentinel not in str(raised.value)
+        assert sentinel not in repr(raised.value)
+        assert sentinel not in (raised.value.body or "")
 
 
 class TestFromSettings:
