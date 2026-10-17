@@ -92,7 +92,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - ORS `driving-hgv` adapter (only when `ORS_API_KEY` set); `FallbackRoutingProvider` chain; `meta.routing_source` reflects provider used.
   - AC: chain falls through on `UpstreamUnavailable`; skipped when no key; fixtures only.
 
-- [ ] **B-21 feat(providers): Open-Meteo weather adapter** — `type:feat` `area:backend`
+- [x] **B-21 feat(providers): Open-Meteo weather adapter — #50** — `type:feat` `area:backend`
   - Batching ≤ 100 points, ≤ 4 concurrent, unit assertion, per-point caching via B-18, returns hourly series keyed by rounded point.
   - AC: unit mismatch raises contract error; batching splits 250 points into 3 calls; cache prevents second call; stale served on outage.
 

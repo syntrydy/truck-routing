@@ -11,6 +11,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from django.core.cache.backends.base import BaseCache
@@ -32,6 +33,14 @@ class CacheResult[T]:
 
     value: T
     stale: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class CachedEntry[T]:
+    """A cached value and how long ago it was fetched."""
+
+    value: T
+    age_s: float
 
 
 class StaleIfErrorCache:
@@ -69,6 +78,20 @@ class StaleIfErrorCache:
         self._write(key, value, timeout_s=max_stale_age_s)
         return CacheResult(value)
 
+    def peek(self, key: str) -> CachedEntry[Any] | None:
+        """The cached entry and its age, whether fresh or not; ``None`` on a miss.
+
+        For callers that fetch many keys in one request and so cannot use ``get_or_load``.
+        """
+        entry = self._read(key)
+        if entry is None:
+            return None
+        return CachedEntry(entry["value"], self._age(entry))
+
+    def put(self, key: str, value: object, *, max_stale_age_s: float) -> None:
+        """Store ``value`` as just fetched; it expires after ``max_stale_age_s``."""
+        self._write(key, value, timeout_s=max_stale_age_s)
+
     def _age(self, entry: dict[str, Any]) -> float:
         return self._clock() - float(entry["fetched_at"])
 
@@ -101,9 +124,10 @@ def route_key(origin: LatLon, destination: LatLon, provider: str) -> str:
     )
 
 
-def weather_key(point: LatLon) -> str:
-    """Key of a point's hourly weather; points are rounded to 0.1 degrees."""
-    return f"{KEY_PREFIX}:weather:{_coordinate(point, WEATHER_DECIMALS)}"
+def weather_key(point: LatLon, first_day: date, last_day: date) -> str:
+    """Key of a point's hourly weather for a range of UTC days; points are rounded to 0.1°."""
+    days = f"{first_day.isoformat()}:{last_day.isoformat()}"
+    return f"{KEY_PREFIX}:weather:{_coordinate(point, WEATHER_DECIMALS)}:{days}"
 
 
 def geocode_key(query: str, provider: str) -> str:

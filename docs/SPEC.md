@@ -111,7 +111,7 @@ Interval `d ∈ {10, 25, 50}` miles. Using cumulative haversine distance and cum
 ### 4.4 Weather at ETA
 
 - Variables: `wind_speed_10m, wind_gusts_10m, rain, showers, snowfall, weather_code`; params `wind_speed_unit=mph&precipitation_unit=inch&timeformat=unixtime&timezone=GMT`.
-- Assert `hourly_units` equal `mph` / `inch`; mismatch raises `UpstreamContractError` (never silently convert).
+- Assert `hourly_units` equal `mp/h` (how Open-Meteo spells miles per hour, requested with `wind_speed_unit=mph`) / `inch`, and `time` equal `unixtime`; a mismatch raises `UpstreamContractError` (never silently convert).
 - Coordinates rounded to 0.1° for cache keys and deduplication; batches of ≤ 100 coordinates; ≤ 4 concurrent batches.
 - Cache per rounded point: hourly series, TTL 30 min, stale-if-error up to 6 h (response flagged `weather_stale: true`).
 - Hour selection: precipitation values are sums over the **preceding** hour → for ETA `t` use the value at `ceil_hour(t)`. Wind is instantaneous → linear interpolation between `floor_hour(t)` and `ceil_hour(t)`.

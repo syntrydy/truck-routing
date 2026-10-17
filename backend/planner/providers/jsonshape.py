@@ -44,6 +44,18 @@ class JsonShape:
             raise self.error(f"{what} is negative")
         return float(value)
 
+    def optional_number(self, value: object, what: str) -> float | None:
+        """A finite non-negative number, or ``None`` where the provider has no value."""
+        return None if value is None else self.number(value, what)
+
+    def integer(self, value: object, what: str) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise self.error(f"{what} is not a whole number")
+        return value
+
+    def optional_integer(self, value: object, what: str) -> int | None:
+        return None if value is None else self.integer(value, what)
+
     def numbers(self, value: object, what: str) -> list[float]:
         return [self.number(item, what) for item in self.sequence(value, what)]
 
