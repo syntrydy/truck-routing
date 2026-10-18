@@ -142,7 +142,7 @@ The backend reads its settings from environment variables; for local development
 | `LOG_LEVEL`                                                   | `INFO`                       | JSON logs on stdout.                                                                             |
 | `PORT`, `WEB_CONCURRENCY`, `GUNICORN_THREADS`                 | `8000`, `2`, `4`             | Read by `config/gunicorn.conf.py`.                                                               |
 
-The frontend reads two build-time variables: `VITE_API_BASE_URL` (the API's origin; empty means the same origin, which the development proxy uses) and `VITE_MAP_STYLE_URL` (a different basemap style).
+The frontend reads two build-time variables: `VITE_API_BASE_URL` (the API's origin; empty means the same origin, which the development proxy uses) and `VITE_MAP_STYLE_URL` (a different basemap style; the default is OpenFreeMap's Bright, which loads about 1.3 MB for the page and a demo plan, where its Liberty style loaded 6.8 MB of shaded-relief images and filled the map in piece by piece on a slow connection).
 
 ## Development
 
