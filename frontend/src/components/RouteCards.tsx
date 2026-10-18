@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 import type { PlanResponse } from "../api/types.ts";
 import { RouteCard } from "./RouteCard.tsx";
@@ -12,7 +12,13 @@ interface RouteCardsProps {
 }
 
 /** The routes of a plan, best first, to compare and choose from. */
-export function RouteCards({ plan, selectedId, hoveredId, onSelect, onHover }: RouteCardsProps) {
+export const RouteCards = memo(function RouteCards({
+  plan,
+  selectedId,
+  hoveredId,
+  onSelect,
+  onHover,
+}: RouteCardsProps) {
   const heading = useRef<HTMLHeadingElement>(null);
   // A new plan has arrived: move focus to its results, so a keyboard or screen reader user
   // starts reading them rather than the form they have just left.
@@ -48,4 +54,4 @@ export function RouteCards({ plan, selectedId, hoveredId, onSelect, onHover }: R
       </ol>
     </section>
   );
-}
+});

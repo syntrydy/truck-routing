@@ -8,9 +8,15 @@ import type { ApiClient } from "./api/client.ts";
 import { App } from "./App.tsx";
 import { fake, fakeMapLibreModule } from "./map/fakeMapLibre.ts";
 import { samplePlan } from "./test/plan.ts";
+import { validateTrip } from "./lib/trip.ts";
 import { CHICAGO, DENVER } from "./test/places.ts";
 
 vi.mock("maplibre-gl", () => fakeMapLibreModule);
+// The form validates on every render, so the calls count its renders.
+vi.mock("./lib/trip.ts", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./lib/trip.ts")>();
+  return { ...actual, validateTrip: vi.fn(actual.validateTrip) };
+});
 
 beforeEach(() => {
   fake.reset();
@@ -217,6 +223,38 @@ describe("App", () => {
     expect(setData).toHaveBeenCalledTimes(before + 1);
     expect(heatmapValues()).toEqual([0, 1, 0.5]);
     vi.unstubAllGlobals();
+  });
+
+  it("leaves the routes alone when only the hour changes", async () => {
+    await planTrip(vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan())));
+    await waitFor(() => {
+      expect(heatmapValues()).toEqual([0, 0, 0]);
+    });
+    const sources = ["routes", "checkpoints"].map((id) =>
+      vi.mocked(fake.maps[0]?.sources.get(id)?.setData ?? vi.fn()),
+    );
+    const before = sources.map((setData) => setData.mock.calls.length);
+
+    for (const hour of ["2", "3", "4"]) {
+      fireEvent.change(screen.getByRole("slider", { name: "Forecast hour" }), {
+        target: { value: hour },
+      });
+    }
+
+    expect(sources.map((setData) => setData.mock.calls.length)).toEqual(before);
+  });
+
+  it("does not redraw the trip form when only the hour changes", async () => {
+    await planTrip(vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan())));
+    const before = vi.mocked(validateTrip).mock.calls.length;
+
+    for (const hour of ["2", "3", "4"]) {
+      fireEvent.change(screen.getByRole("slider", { name: "Forecast hour" }), {
+        target: { value: hour },
+      });
+    }
+
+    expect(vi.mocked(validateTrip)).toHaveBeenCalledTimes(before);
   });
 
   it("maps another variable when it is chosen", async () => {

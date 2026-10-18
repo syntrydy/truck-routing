@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { useDelayedFlag } from "../hooks/useDelayedFlag.ts";
 
 /** How long the server may take to answer before it is said to be waking up (SPEC section 7). */
@@ -14,7 +16,7 @@ interface ServerStatusProps {
  * Says what is going on when the server is slow to answer the first call, which free hosting
  * causes by putting idle servers to sleep. Silent while the server answers quickly.
  */
-export function ServerStatus({ waking, failed }: ServerStatusProps) {
+export const ServerStatus = memo(function ServerStatus({ waking, failed }: ServerStatusProps) {
   const slow = useDelayedFlag(waking, COLD_START_AFTER_MS);
   if (failed) {
     return (
@@ -33,4 +35,4 @@ export function ServerStatus({ waking, failed }: ServerStatusProps) {
     );
   }
   return null;
-}
+});
