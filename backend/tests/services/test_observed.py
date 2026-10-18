@@ -78,6 +78,7 @@ class TestObservedPlanService:
         }
         assert record["breakers"] == {"osrm": "closed", "open-meteo": "open"}
         assert "weather_points" in record
+        assert record["weather_batches_lost"] == 0
 
     def test_the_record_is_json_and_holds_no_coordinates_or_labels(
         self, setup: Any, caplog: pytest.LogCaptureFixture
