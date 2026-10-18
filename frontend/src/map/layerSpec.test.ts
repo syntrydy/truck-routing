@@ -17,6 +17,8 @@ function styleWithOurLayers(): StyleSpecification {
   installHeatmapLayers(map as unknown as MapLibreMap);
   return {
     version: 8,
+    // The labels need the basemap's glyphs; the real style names them.
+    glyphs: "https://tiles.example/fonts/{fontstack}/{range}.pbf",
     sources: Object.fromEntries(
       [...map.sources].map(([name, source]) => [name, { type: "geojson", data: source.spec.data }]),
     ),
@@ -35,10 +37,29 @@ describe("the layers we add", () => {
     expect(styleWithOurLayers().layers.map((layer) => layer.id)).toEqual([
       "routes-casing",
       "routes-line",
+      "routes-line-dashed",
+      "routes-line-dotted",
+      "routes-label",
       "checkpoints",
       "heatmap-glow",
       "heatmap-points",
     ]);
+  });
+
+  it("draws each pattern in a layer of its own, because a pattern cannot vary by route", () => {
+    const layers = styleWithOurLayers().layers;
+    const filtered = (id: string) => layers.find((layer) => layer.id === id);
+
+    expect(filtered("routes-line")).toMatchObject({ filter: ["==", ["get", "pattern"], "solid"] });
+    expect(filtered("routes-line-dashed")).toMatchObject({
+      filter: ["==", ["get", "pattern"], "dashed"],
+      paint: { "line-dasharray": [3, 2] },
+    });
+    expect(filtered("routes-line-dotted")).toMatchObject({
+      filter: ["==", ["get", "pattern"], "dotted"],
+      paint: { "line-dasharray": [0.1, 2.2] },
+    });
+    expect(filtered("routes-line")).not.toHaveProperty("paint.line-dasharray");
   });
 
   it("would be caught if one were wrong", () => {

@@ -3,6 +3,7 @@ import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap } from 
 
 import type { PlanResponse } from "../api/types.ts";
 import { LEVEL_STYLES, RISK_LEVELS } from "../lib/risk.ts";
+import { MAP_DASH, type RoutePattern } from "../lib/routeStyle.ts";
 import {
   checkpointFeatures,
   routeBounds,
@@ -15,6 +16,11 @@ type Route = PlanResponse["routes"][number];
 export const ROUTES_SOURCE = "routes";
 export const ROUTES_CASING_LAYER = "routes-casing";
 export const ROUTES_LINE_LAYER = "routes-line";
+export const ROUTES_DASHED_LAYER = "routes-line-dashed";
+export const ROUTES_DOTTED_LAYER = "routes-line-dotted";
+export const ROUTES_LABEL_LAYER = "routes-label";
+/** The layers that draw the route lines, one for each pattern: a pattern cannot vary by feature. */
+export const ROUTES_LINE_LAYERS = [ROUTES_LINE_LAYER, ROUTES_DASHED_LAYER, ROUTES_DOTTED_LAYER];
 export const CHECKPOINTS_SOURCE = "checkpoints";
 export const CHECKPOINTS_LAYER = "checkpoints";
 
@@ -63,14 +69,44 @@ export function installRouteLayers(map: MapLibreMap): void {
     layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "order"] },
     paint: { "line-color": "#ffffff", "line-width": byEmphasis(12, 10, 8) },
   });
+  const lines: [string, RoutePattern][] = [
+    [ROUTES_LINE_LAYER, "solid"],
+    [ROUTES_DASHED_LAYER, "dashed"],
+    [ROUTES_DOTTED_LAYER, "dotted"],
+  ];
+  for (const [id, pattern] of lines) {
+    map.addLayer({
+      id,
+      type: "line",
+      source: ROUTES_SOURCE,
+      filter: ["==", ["get", "pattern"], pattern],
+      layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "order"] },
+      paint: {
+        "line-color": byEmphasis("#1a3d7c", "#3b6fd0", "#6b7c93"),
+        "line-width": byEmphasis(8, 6, 4),
+        ...(pattern === "solid" ? {} : { "line-dasharray": MAP_DASH[pattern] }),
+      },
+    });
+  }
+  // The route's letter along its line, over a white halo; the selected route's wins a clash.
   map.addLayer({
-    id: ROUTES_LINE_LAYER,
-    type: "line",
+    id: ROUTES_LABEL_LAYER,
+    type: "symbol",
     source: ROUTES_SOURCE,
-    layout: { "line-cap": "round", "line-join": "round", "line-sort-key": ["get", "order"] },
+    layout: {
+      "symbol-placement": "line",
+      "symbol-spacing": 320,
+      "symbol-sort-key": ["-", 0, ["get", "order"]],
+      "text-field": ["get", "letter"],
+      "text-font": ["Noto Sans Bold"],
+      "text-size": 15,
+      "text-padding": 8,
+      "text-keep-upright": true,
+    },
     paint: {
-      "line-color": byEmphasis("#1a3d7c", "#3b6fd0", "#6b7c93"),
-      "line-width": byEmphasis(8, 6, 4),
+      "text-color": byEmphasis("#1a3d7c", "#1a3d7c", "#3d4a5c"),
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 2.5,
     },
   });
   // Level is also in the size of the dot (worse is bigger), so it does not rest on colour alone.

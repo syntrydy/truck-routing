@@ -66,7 +66,7 @@ describe("App", () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
     await waitFor(() => {
-      expect(fake.maps[0]?.layers).toHaveLength(5);
+      expect(fake.maps[0]?.layers).toHaveLength(8);
     });
     const map = fake.maps[0];
 
@@ -93,7 +93,7 @@ describe("App", () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
     await waitFor(() => {
-      expect(fake.maps[0]?.layers).toHaveLength(5);
+      expect(fake.maps[0]?.layers).toHaveLength(8);
     });
     const map = fake.maps[0];
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
@@ -125,7 +125,7 @@ describe("App", () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
     await waitFor(() => {
-      expect(fake.maps[0]?.layers).toHaveLength(5);
+      expect(fake.maps[0]?.layers).toHaveLength(8);
     });
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("button", { name: "Route R2" });
@@ -142,7 +142,7 @@ describe("App", () => {
   async function planTrip(plan: ApiClient["plan"]) {
     const context = renderApp({ plan });
     await waitFor(() => {
-      expect(fake.maps[0]?.layers).toHaveLength(5);
+      expect(fake.maps[0]?.layers).toHaveLength(8);
     });
     await context.user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("slider", { name: "Forecast hour" });

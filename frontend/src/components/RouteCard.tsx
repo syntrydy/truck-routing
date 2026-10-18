@@ -1,6 +1,7 @@
 import type { PlanResponse } from "../api/types.ts";
 import { formatDuration, formatMiles } from "../lib/format.ts";
 import { LEVEL_STYLES } from "../lib/risk.ts";
+import { routePattern, SWATCH_DASH } from "../lib/routeStyle.ts";
 import { RiskBar } from "./RiskBar.tsx";
 
 type Route = PlanResponse["routes"][number];
@@ -45,6 +46,17 @@ export function RouteCard({
           <span className="visually-hidden">Rank </span>
           {route.rank}
         </span>
+        <svg className="route-card__swatch" viewBox="0 0 32 6" aria-hidden="true">
+          <line
+            x1="2"
+            y1="3"
+            x2="30"
+            y2="3"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeDasharray={SWATCH_DASH[routePattern(route.label)]}
+          />
+        </svg>
         <button
           type="button"
           className="route-card__button"

@@ -8,7 +8,7 @@ import {
   CHECKPOINTS_LAYER,
   fitToRoutes,
   installRouteLayers,
-  ROUTES_LINE_LAYER,
+  ROUTES_LINE_LAYERS,
   setRouteData,
 } from "./routeLayers.ts";
 import type { MapState } from "./useMap.ts";
@@ -91,9 +91,11 @@ export function useRouteLayers(
 
     const stopWaiting = whenStyleLoaded(map, () => {
       installRouteLayers(map);
-      map.on("mousemove", ROUTES_LINE_LAYER, onRouteMove);
-      map.on("mouseleave", ROUTES_LINE_LAYER, onRouteLeave);
-      map.on("click", ROUTES_LINE_LAYER, onRouteClick);
+      for (const layer of ROUTES_LINE_LAYERS) {
+        map.on("mousemove", layer, onRouteMove);
+        map.on("mouseleave", layer, onRouteLeave);
+        map.on("click", layer, onRouteClick);
+      }
       map.on("click", CHECKPOINTS_LAYER, onCheckpointClick);
       map.on("mouseenter", CHECKPOINTS_LAYER, onCheckpointEnter);
       map.on("mouseleave", CHECKPOINTS_LAYER, onCheckpointLeave);
@@ -102,9 +104,11 @@ export function useRouteLayers(
 
     return () => {
       stopWaiting();
-      map.off("mousemove", ROUTES_LINE_LAYER, onRouteMove);
-      map.off("mouseleave", ROUTES_LINE_LAYER, onRouteLeave);
-      map.off("click", ROUTES_LINE_LAYER, onRouteClick);
+      for (const layer of ROUTES_LINE_LAYERS) {
+        map.off("mousemove", layer, onRouteMove);
+        map.off("mouseleave", layer, onRouteLeave);
+        map.off("click", layer, onRouteClick);
+      }
       map.off("click", CHECKPOINTS_LAYER, onCheckpointClick);
       map.off("mouseenter", CHECKPOINTS_LAYER, onCheckpointEnter);
       map.off("mouseleave", CHECKPOINTS_LAYER, onCheckpointLeave);

@@ -6,7 +6,7 @@ import { samplePlan } from "../test/plan.ts";
 import { fake, fakeMapLibreModule, type FakeMap } from "./fakeMapLibre.ts";
 import { MapView } from "./MapView.tsx";
 import type { RouteSelection } from "./routeData.ts";
-import { CHECKPOINTS_LAYER, ROUTES_LINE_LAYER } from "./routeLayers.ts";
+import { CHECKPOINTS_LAYER, ROUTES_LINE_LAYER, ROUTES_LINE_LAYERS } from "./routeLayers.ts";
 
 vi.mock("maplibre-gl", () => fakeMapLibreModule);
 
@@ -41,7 +41,7 @@ async function installed(initial = props()) {
   const view = render(<MapView {...initial} />);
   const map = await mapCreated();
   await waitFor(() => {
-    expect(map.layers).toHaveLength(5);
+    expect(map.layers).toHaveLength(8);
   });
   return { ...view, map, callbacks: initial };
 }
@@ -55,9 +55,12 @@ describe("adding the layers", () => {
     const { map } = await installed();
 
     expect([...map.sources.keys()].slice(0, 2)).toEqual(["routes", "checkpoints"]);
-    expect(map.layers.slice(0, 3).map(({ id, type, source }) => [id, type, source])).toEqual([
+    expect(map.layers.slice(0, 6).map(({ id, type, source }) => [id, type, source])).toEqual([
       ["routes-casing", "line", "routes"],
       ["routes-line", "line", "routes"],
+      ["routes-line-dashed", "line", "routes"],
+      ["routes-line-dotted", "line", "routes"],
+      ["routes-label", "symbol", "routes"],
       ["checkpoints", "circle", "checkpoints"],
     ]);
   });
@@ -80,7 +83,7 @@ describe("adding the layers", () => {
     map.emit("styledata");
 
     await waitFor(() => {
-      expect(map.layers).toHaveLength(5);
+      expect(map.layers).toHaveLength(8);
     });
     await waitFor(() => {
       expect(features(map, "routes")).toHaveLength(2);
@@ -97,7 +100,7 @@ describe("adding the layers", () => {
       <MapView {...callbacks} plan={samplePlan()} selection={{ ...NONE, selectedId: "r2" }} />,
     );
 
-    expect(map.layers).toHaveLength(5);
+    expect(map.layers).toHaveLength(8);
     expect(fake.maps).toHaveLength(1);
   });
 });
@@ -142,7 +145,7 @@ describe("drawing a plan", () => {
       expect(features(map, "routes")[1]?.properties.emphasis).toBe("selected");
     });
     expect(features(map, "routes")[0]?.properties.emphasis).toBe("normal");
-    expect(map.layers).toHaveLength(5);
+    expect(map.layers).toHaveLength(8);
   });
 });
 
@@ -228,6 +231,21 @@ describe("pointing at routes", () => {
     expect(callbacks.onHoverRoute).toHaveBeenCalledWith("r2");
     expect(map.canvas.style.cursor).toBe("pointer");
   });
+
+  it.each(ROUTES_LINE_LAYERS)(
+    "reports and selects the route under the pointer on %s",
+    async (layer) => {
+      const { map, callbacks } = await installed();
+
+      map.emit("mousemove", layer, routeEvent("r2"));
+      map.emit("click", layer, routeEvent("r2"));
+      map.emit("mouseleave", layer);
+
+      expect(callbacks.onHoverRoute).toHaveBeenNthCalledWith(1, "r2");
+      expect(callbacks.onSelectRoute).toHaveBeenCalledWith("r2");
+      expect(callbacks.onHoverRoute).toHaveBeenLastCalledWith(null);
+    },
+  );
 
   it("reports that the pointer left", async () => {
     const { map, callbacks } = await installed();
