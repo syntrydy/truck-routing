@@ -30,6 +30,9 @@ test("plans a trip, opens a checkpoint and moves the forecast", async ({ page })
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Weather-Aware Truck Routing");
 
+  await expect(page.getByRole("combobox", { name: "From" })).toHaveValue(/^Chicago/);
+  await expect(page.getByRole("combobox", { name: "To" })).toHaveValue(/^Denver/);
+
   await chooseTrip(page, "From", "boulder");
   await chooseTrip(page, "To", "fort collins");
   const planned = page.waitForResponse("**/api/plan");
