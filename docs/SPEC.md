@@ -91,7 +91,7 @@ Do not add: repositories over a DB we don't have, event buses, CQRS, microservic
 1. Request OSRM `route/v1/driving/{o};{d}?alternatives=3&overview=full&geometries=geojson&annotations=distance,duration&steps=false`.
 2. If fewer than 3 routes: generate via-point detours. Midpoint `m` of the fastest route; offset perpendicular to the origin→destination bearing by `±max(15 km, 0.08 × straight-line distance)`; route `o → via → d`.
 3. Deduplicate: sample each route every 1 km; a candidate is a duplicate if > 85% of its samples lie within 1 km of an already-kept route.
-4. Reject detours whose distance exceeds the fastest route by > 40%.
+4. Reject detours whose distance exceeds the fastest route by > 40%, and detours that double back: over some 100 km of road (half the route for a shorter one) the straight-line distance between its two ends is < 60% of the road distance. A via point beside no road that leads on makes the router go out and come back, or leave the road and rejoin it; routes from the provider are never judged this way.
 5. Keep at most 3, ordered by duration. If fewer than 3 remain, add note `"Only N distinct routes exist for this trip"`. Never pad with duplicates.
 6. OSRM calls are serialized with ≥ 1.1 s spacing (process-wide lock). Route results cached by `(rounded origin, rounded destination, provider)` for 1 h.
 
