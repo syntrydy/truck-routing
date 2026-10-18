@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import { ApiError } from "../api/errors.ts";
 import type { PlanResponse } from "../api/types.ts";
 import { describeError } from "../lib/planErrors.ts";
@@ -12,7 +14,12 @@ interface PlanStatusProps {
 }
 
 /** What is happening with the plan request: working, failed (and what to do), or done. */
-export function PlanStatus({ pending, error, plan, onRetry }: PlanStatusProps) {
+export const PlanStatus = memo(function PlanStatus({
+  pending,
+  error,
+  plan,
+  onRetry,
+}: PlanStatusProps) {
   if (pending) {
     return <PlanProgress />;
   }
@@ -45,4 +52,4 @@ export function PlanStatus({ pending, error, plan, onRetry }: PlanStatusProps) {
     );
   }
   return null;
-}
+});

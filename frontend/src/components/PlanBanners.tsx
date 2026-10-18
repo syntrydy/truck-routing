@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import type { PlanResponse } from "../api/types.ts";
 
 interface PlanBannersProps {
@@ -5,7 +7,7 @@ interface PlanBannersProps {
 }
 
 /** What to warn about before the routes: the plan's banner, then its notes. */
-export function PlanBanners({ plan }: PlanBannersProps) {
+export const PlanBanners = memo(function PlanBanners({ plan }: PlanBannersProps) {
   return (
     <div className="banners">
       {plan.banner === "NO_SAFE_ROUTE" && (
@@ -29,4 +31,4 @@ export function PlanBanners({ plan }: PlanBannersProps) {
       )}
     </div>
   );
-}
+});

@@ -148,7 +148,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Cold-start message after 3 s without health response, progress steps, error messages per code with suggestions, mobile bottom sheet, focus management.
   - AC: tests for each state; Lighthouse accessibility ≥ 95 on the built app.
 
-- [ ] **B-34 perf(web): performance pass** — `type:perf` `area:frontend`
+- [x] **B-34 perf(web): performance pass** — #78 — `type:perf` `area:frontend`
   - Bundle analysis, code-split MapLibre, memo audit, avoid re-renders on slider (React profiler), verify budgets in SPEC §7.
   - AC: budgets met and numbers recorded in PR description.
 

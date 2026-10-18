@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import type { PlanRequest } from "./api/types.ts";
 import { useWarmUp } from "./api/useWarmUp.ts";
@@ -31,28 +31,40 @@ export function App() {
     ? chosenId
     : (plan.data?.recommended_route_id ?? routes[0]?.id ?? null);
 
-  const planTrip = (request: PlanRequest) => {
-    setPlanned(request);
-    setChosenId(null);
-    // On a phone, fold the sheet away to show the map when the plan arrives; open it for an error.
-    plan.mutate(request, {
-      onSuccess: () => {
-        setSheetOpen(false);
-        // The results heading takes focus when it is on screen; on a phone it is folded away
-        // with the sheet, so focus goes to the sheet's bar instead of being lost.
-        // The browser only drops focus from a hidden element once it has laid the page out, so
-        // look again two frames on.
-        requestAnimationFrame(() => {
+  // Stable between slider moves, so the panel's memoized parts and the map's route layers
+  // are left alone while only the hour changes.
+  const selection = useMemo(() => ({ selectedId, hoveredId }), [selectedId, hoveredId]);
+  const { mutate } = plan;
+  const planTrip = useCallback(
+    (request: PlanRequest) => {
+      setPlanned(request);
+      setChosenId(null);
+      // On a phone, fold the sheet away to show the map when the plan arrives; open it for an error.
+      mutate(request, {
+        onSuccess: () => {
+          setSheetOpen(false);
+          // The results heading takes focus when it is on screen; on a phone it is folded away
+          // with the sheet, so focus goes to the sheet's bar instead of being lost.
+          // The browser only drops focus from a hidden element once it has laid the page out, so
+          // look again two frames on.
           requestAnimationFrame(() => {
-            focusIfLost(toggleRef.current);
+            requestAnimationFrame(() => {
+              focusIfLost(toggleRef.current);
+            });
           });
-        });
-      },
-      onError: () => {
-        setSheetOpen(true);
-      },
-    });
-  };
+        },
+        onError: () => {
+          setSheetOpen(true);
+        },
+      });
+    },
+    [mutate],
+  );
+  const retry = useCallback(() => {
+    if (planned !== null) {
+      planTrip(planned);
+    }
+  }, [planned, planTrip]);
   const data = plan.data;
   const best = data?.routes.find((route) => route.id === data.recommended_route_id);
   const summary =
@@ -75,11 +87,7 @@ export function App() {
             pending={plan.isPending}
             error={plan.error}
             plan={plan.data ?? null}
-            onRetry={() => {
-              if (planned !== null) {
-                planTrip(planned);
-              }
-            }}
+            onRetry={retry}
           />
           {hasNothingYet && (
             <p className="empty-state">
@@ -104,7 +112,7 @@ export function App() {
       map={
         <MapView
           plan={plan.data ?? null}
-          selection={{ selectedId, hoveredId }}
+          selection={selection}
           onSelectRoute={setChosenId}
           onHoverRoute={setHoveredId}
           forecast={{ frames: forecast.frames, hour: forecast.hour }}

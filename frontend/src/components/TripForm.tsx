@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type SubmitEvent } from "react";
+import { type SubmitEvent, memo, useId, useRef, useState } from "react";
 
 import type { PlanRequest } from "../api/types.ts";
 import {
@@ -26,7 +26,11 @@ interface TripFormProps {
 const FIELDS: readonly TripField[] = ["origin", "destination", "departure", "load"];
 
 /** The trip description: two places, departure, load and checkpoint spacing. */
-export function TripForm({ planned, onSubmit, now = () => new Date() }: TripFormProps) {
+export const TripForm = memo(function TripForm({
+  planned,
+  onSubmit,
+  now = () => new Date(),
+}: TripFormProps) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
   const [values, setValues] = useState<TripValues>(() => defaultTripValues(now()));
@@ -168,4 +172,4 @@ export function TripForm({ planned, onSubmit, now = () => new Date() }: TripForm
       </button>
     </form>
   );
-}
+});
