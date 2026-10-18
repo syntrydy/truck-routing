@@ -25,25 +25,6 @@ const scaleStops = [
   NO_TRAVEL.color,
 ];
 
-/** The same ramp over the heat layer's density, transparent where there is nothing. */
-const heatColor = [
-  "interpolate",
-  ["linear"],
-  ["heatmap-density"],
-  0,
-  "rgba(46, 158, 79, 0)",
-  0.1,
-  "rgba(46, 158, 79, 0.45)",
-  0.3,
-  MODERATE.color,
-  0.5,
-  HIGH.color,
-  0.75,
-  SEVERE.color,
-  1,
-  NO_TRAVEL.color,
-] as unknown as ExpressionSpecification;
-
 const pointColor = [
   "case",
   ["get", "known"],
@@ -51,7 +32,30 @@ const pointColor = [
   UNKNOWN_COLOR,
 ] as unknown as ExpressionSpecification;
 
-// The heat fades out as the circles fade in, between these zoom levels (SPEC section 7).
+/**
+ * The radius of a point's soft circle: `GLOW_REACH` of the grid spacing at every zoom, so that
+ * neighbours join up into a band. A degree is 256 * 2^zoom / 360 pixels wide, so the radius
+ * doubles with each zoom level; an exponential interpolation of base 2 between two stops that
+ * differ by that factor is exact between them.
+ */
+const GLOW_REACH = 1.6;
+const GLOW_FIRST_ZOOM = 3;
+const GLOW_LAST_ZOOM = 10;
+const PIXELS_PER_DEGREE_AT_ZOOM_0 = 256 / 360;
+const pixelsPerCellDegree = (zoom: number) => GLOW_REACH * PIXELS_PER_DEGREE_AT_ZOOM_0 * 2 ** zoom;
+const glowRadius = [
+  "interpolate",
+  ["exponential", 2],
+  ["zoom"],
+  GLOW_FIRST_ZOOM,
+  ["*", ["get", "cell"], pixelsPerCellDegree(GLOW_FIRST_ZOOM)],
+  GLOW_LAST_ZOOM,
+  ["*", ["get", "cell"], pixelsPerCellDegree(GLOW_LAST_ZOOM)],
+] as unknown as ExpressionSpecification;
+const GLOW_BLUR = 0.8;
+const GLOW_OPACITY = 0.7;
+
+// The glow fades out as the crisp circles fade in, between these zoom levels (SPEC section 7).
 const FADE_START_ZOOM = 8;
 const FADE_END_ZOOM = 9.5;
 const UNKNOWN_OPACITY = 0.55;
@@ -71,23 +75,27 @@ export function installHeatmapLayers(map: MapLibreMap): void {
     type: "geojson",
     data: { type: "FeatureCollection", features: [] },
   });
+  // One soft circle per point in the point's own colour, so a colour on the map is a level on
+  // the legend. (A heatmap layer colours by the density of points, which adds Moderate points up
+  // to red.) The worse point is drawn on top where circles meet, and none changes the other's
+  // colour.
   map.addLayer(
     {
       id: HEATMAP_GLOW_LAYER,
-      type: "heatmap",
+      type: "circle",
       source: HEATMAP_SOURCE,
+      filter: ["get", "known"],
+      layout: { "circle-sort-key": ["get", "value"] },
       paint: {
-        "heatmap-weight": ["get", "heat"],
-        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 3, 1.6, 9, 2.4],
-        // Wide enough that neighbouring grid points merge into one band at every zoom.
-        "heatmap-radius": ["interpolate", ["exponential", 2], ["zoom"], 3, 14, 9, 380],
-        "heatmap-color": heatColor,
-        "heatmap-opacity": [
+        "circle-color": pointColor,
+        "circle-radius": glowRadius,
+        "circle-blur": GLOW_BLUR,
+        "circle-opacity": [
           "interpolate",
           ["linear"],
           ["zoom"],
           FADE_START_ZOOM,
-          0.9,
+          GLOW_OPACITY,
           FADE_END_ZOOM,
           0,
         ],

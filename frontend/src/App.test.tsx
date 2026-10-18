@@ -251,7 +251,7 @@ describe("App", () => {
     });
     expect(screen.getByRole("slider", { name: "Forecast hour" })).toHaveAttribute(
       "aria-valuetext",
-      "Sun, 2:00 PM CDT (UTC-05:00), at departure",
+      "Sun, 2:00 PM CDT (UTC-05:00), +0 h",
     );
   });
 

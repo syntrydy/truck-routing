@@ -58,7 +58,8 @@ test("plans a trip, opens a checkpoint and moves the forecast", async ({ page })
   );
   const canvas = await page.getByTestId("map-canvas").boundingBox();
   await page.mouse.click((canvas?.x ?? 0) + point.x, (canvas?.y ?? 0) + point.y);
-  await expect(page.locator(".maplibregl-popup")).toContainText("mph");
+  // The checkpoint's popup; the summary of the route line under the pointer is a popup too.
+  await expect(page.locator(".maplibregl-popup:not(.route-tip-popup)")).toContainText("mph");
 
   // Move the forecast an hour at a time with the keyboard.
   const slider = page.getByRole("slider", { name: "Forecast hour" });

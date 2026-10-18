@@ -1,4 +1,5 @@
 import type { PlanResponse } from "../api/types.ts";
+import { formatMoment } from "../lib/forecastTime.ts";
 import { formatDuration, formatMiles } from "../lib/format.ts";
 import { LEVEL_STYLES } from "../lib/risk.ts";
 
@@ -7,16 +8,9 @@ type Checkpoint = Route["checkpoints"][number];
 
 const UNAVAILABLE = "not available";
 
-/** The ETA as the reader's local time with its zone, e.g. `Sun, Oct 18, 2:00 PM CDT`. */
+/** The ETA as the reader's local time with its date and zone, as every time on screen. */
 export function formatEta(iso: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(new Date(iso));
+  return formatMoment(new Date(iso), { withDate: true });
 }
 
 /**

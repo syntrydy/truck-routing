@@ -882,6 +882,18 @@ ul.banner {
   width: 18rem;
 }
 
+.forecast__key {
+  display: grid;
+  flex: 1;
+  gap: 0.25rem;
+}
+
+.forecast__note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+}
+
 .legend {
   display: flex;
   flex: 1;

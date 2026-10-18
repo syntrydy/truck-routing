@@ -2,6 +2,7 @@ import { validateStyleMin } from "@maplibre/maplibre-gl-style-spec";
 import type { Map as MapLibreMap, StyleSpecification } from "maplibre-gl";
 import { describe, expect, it } from "vitest";
 
+import { LEVEL_STYLES } from "../lib/risk.ts";
 import { FakeMap } from "./fakeMapLibre.ts";
 import { installHeatmapLayers } from "./heatmapLayers.ts";
 import { installRouteLayers } from "./routeLayers.ts";
@@ -60,6 +61,52 @@ describe("the layers we add", () => {
       paint: { "line-dasharray": [0.1, 2.2] },
     });
     expect(filtered("routes-line")).not.toHaveProperty("paint.line-dasharray");
+  });
+
+  it("colours every point by its own level, with the legend's five colours and no heat layer", () => {
+    const layers = styleWithOurLayers().layers;
+    const glow = layers.find((layer) => layer.id === "heatmap-glow");
+    const points = layers.find((layer) => layer.id === "heatmap-points");
+
+    expect(layers.some((layer) => layer.type === "heatmap")).toBe(false);
+    expect(glow?.type).toBe("circle");
+    const colour = JSON.stringify(
+      (glow as { paint: Record<string, unknown> }).paint["circle-color"],
+    );
+    for (const level of ["LOW", "MODERATE", "HIGH", "SEVERE", "NO_TRAVEL"] as const) {
+      expect(colour).toContain(LEVEL_STYLES[level].color);
+    }
+    expect((points as { paint: Record<string, unknown> }).paint["circle-color"]).toEqual(
+      (glow as { paint: Record<string, unknown> }).paint["circle-color"],
+    );
+  });
+
+  it("draws the worse point on top and only the known ones in the glow", () => {
+    const glow = styleWithOurLayers().layers.find((layer) => layer.id === "heatmap-glow") as {
+      filter: unknown;
+      layout: Record<string, unknown>;
+    };
+
+    expect(glow.filter).toEqual(["get", "known"]);
+    expect(glow.layout["circle-sort-key"]).toEqual(["get", "value"]);
+  });
+
+  it("sizes a circle by the grid spacing, doubling with each zoom level", () => {
+    const glow = styleWithOurLayers().layers.find((layer) => layer.id === "heatmap-glow");
+    const radius = (glow as unknown as { paint: Record<string, unknown[]> }).paint["circle-radius"];
+    const [kind, , , firstZoom, first, lastZoom, last] = radius as [
+      string,
+      unknown,
+      unknown,
+      number,
+      [string, unknown, number],
+      number,
+      [string, unknown, number],
+    ];
+
+    expect(kind).toBe("interpolate");
+    expect(first[1]).toEqual(["get", "cell"]);
+    expect(last[2] / first[2]).toBeCloseTo(2 ** (lastZoom - firstZoom));
   });
 
   it("would be caught if one were wrong", () => {

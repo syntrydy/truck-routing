@@ -32,6 +32,14 @@ function setup(overrides: Partial<Parameters<typeof ForecastSlider>[0]> = {}) {
 const slider = () => screen.getByRole("slider", { name: "Forecast hour" });
 
 describe("the slider", () => {
+  it("says that the map shows the slider's time and the route dots the arrival time", () => {
+    setup();
+
+    expect(
+      screen.getByText(/Map colours show the forecast at the time above\. The dots on the routes/),
+    ).toBeInTheDocument();
+  });
+
   it("covers the 49 hours", () => {
     setup();
 
@@ -47,10 +55,10 @@ describe("the slider", () => {
     expect(screen.getByText("Sun, 5:00 PM CDT (UTC-05:00), +3 h")).toBeInTheDocument();
   });
 
-  it("says when it is the time of departure", () => {
+  it("says +0 h for the first frame, with its clock time", () => {
     setup({ hour: 0 });
 
-    expect(slider()).toHaveAttribute("aria-valuetext", expect.stringContaining("at departure"));
+    expect(slider()).toHaveAttribute("aria-valuetext", expect.stringContaining("+0 h"));
   });
 
   it("shows the day change", () => {
