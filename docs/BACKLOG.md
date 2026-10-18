@@ -158,7 +158,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Backend in fixture mode (`PROVIDERS_MODE=fixtures` serving recorded responses); test plans a trip, sees 3 routes, opens a checkpoint popup, moves slider. Runs in CI.
   - AC: green in CI; fixture mode impossible to enable when `DEBUG=False` unless explicitly allowed.
 
-- [ ] **B-36 chore(deploy): Render and Vercel configuration** — `type:chore` `area:infra`
+- [x] **B-36 chore(deploy): Render and Vercel configuration** — #82 — `type:chore` `area:infra`
   - `render.yaml`, `vercel.json` (SPA rewrite + security headers/CSP), env var docs, deploy steps in README.
   - AC: both deployed; `/api/ready` healthy; CORS limited to the Vercel origin; production smoke check passes.
 
