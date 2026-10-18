@@ -1,7 +1,9 @@
 import type { PlanResponse } from "../api/types.ts";
+import { formatDuration, formatMiles } from "../lib/format.ts";
 import { LEVEL_STYLES } from "../lib/risk.ts";
 
-type Checkpoint = PlanResponse["routes"][number]["checkpoints"][number];
+type Route = PlanResponse["routes"][number];
+type Checkpoint = Route["checkpoints"][number];
 
 const UNAVAILABLE = "not available";
 
@@ -15,6 +17,30 @@ export function formatEta(iso: string): string {
     minute: "2-digit",
     timeZoneName: "short",
   }).format(new Date(iso));
+}
+
+/**
+ * A route in one line, with the figures of its card: `Route A · 9 h · 505 mi · 75 mi No travel`,
+ * or `Route B · 9 h 57 min · 503 mi · Worst: Low` when nothing is worse than Low.
+ */
+export function routeSummaryText(route: Route): string {
+  const { worst_level: worst, miles_by_level: miles } = route.summary;
+  const atWorst = miles[worst] ?? 0;
+  const risk =
+    worst === "LOW" || worst === "UNKNOWN" || atWorst <= 0
+      ? `Worst: ${LEVEL_STYLES[worst].label}`
+      : `${formatMiles(atWorst)} ${LEVEL_STYLES[worst].label}`;
+  return [route.label, formatDuration(route.duration_s), formatMiles(route.distance_mi), risk].join(
+    " · ",
+  );
+}
+
+/** The label shown beside the pointer on a route line, from text nodes only. */
+export function buildRouteSummary(route: Route, doc: Document = document): HTMLElement {
+  const root = doc.createElement("p");
+  root.className = "route-tip";
+  root.textContent = routeSummaryText(route);
+  return root;
 }
 
 function measure(value: number | null, unit: string): string {
