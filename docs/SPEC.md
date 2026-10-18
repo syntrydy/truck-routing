@@ -22,25 +22,25 @@ A React + Django web app that helps a truck driver choose the safest route betwe
 
 ## 2. Stack
 
-| Layer | Choice |
-| --- | --- |
-| Backend | Python 3.12, Django 6.x, Django REST Framework, drf-spectacular (OpenAPI), httpx, gunicorn (gthread) |
-| Backend tooling | uv (deps + lockfile), ruff (lint + format, incl. `S` security rules), mypy (strict on `planner/domain` and `planner/providers`), pytest, pytest-django, pytest-cov, respx, hypothesis (boundary/property tests), bandit, pip-audit |
-| Frontend | React 19 + TypeScript (strict) + Vite, MapLibre GL JS, TanStack Query, openapi-typescript (types generated from the backend schema) |
-| Frontend tooling | eslint (typescript-eslint strict-type-checked, react-hooks, jsx-a11y), prettier, vitest + Testing Library, Playwright (one smoke test) |
-| Repo tooling | pre-commit, gitleaks, GitHub Actions, CodeQL, Dependabot |
-| Hosting | Backend on Render (free web service), frontend on Vercel |
+| Layer            | Choice                                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend          | Python 3.12, Django 6.x, Django REST Framework, drf-spectacular (OpenAPI), httpx, gunicorn (gthread)                                                                                                                               |
+| Backend tooling  | uv (deps + lockfile), ruff (lint + format, incl. `S` security rules), mypy (strict on `planner/domain` and `planner/providers`), pytest, pytest-django, pytest-cov, respx, hypothesis (boundary/property tests), bandit, pip-audit |
+| Frontend         | React 19 + TypeScript (strict) + Vite, MapLibre GL JS, TanStack Query, openapi-typescript (types generated from the backend schema)                                                                                                |
+| Frontend tooling | eslint (typescript-eslint strict-type-checked, react-hooks, jsx-a11y), prettier, vitest + Testing Library, Playwright (one smoke test)                                                                                             |
+| Repo tooling     | pre-commit, gitleaks, GitHub Actions, CodeQL, Dependabot                                                                                                                                                                           |
+| Hosting          | Backend on Render (free web service), frontend on Vercel                                                                                                                                                                           |
 
 External services (all keyless unless noted):
 
-| Purpose | Service | Constraints |
-| --- | --- | --- |
-| Routing | OSRM public demo server (`router.project-osrm.org`) | ≤ 1 req/s, best effort, car profile, valid User-Agent, attribution (ODbL + OSRM) |
-| Routing fallback (optional) | openrouteservice `driving-hgv` (free API key via `ORS_API_KEY`) | Alternatives only ≤ 100 km, so used for single routes + via-point detours |
-| Geocoding | Photon (komoot) primary, Nominatim fallback | Nominatim: ≤ 1 req/s, no autocomplete use |
-| Weather | Open-Meteo forecast API | Free tier 600/min, 5,000/h, 10,000/day, non-commercial, CC BY 4.0 attribution |
-| Weather fallback | US National Weather Service (`api.weather.gov`) | Keyless, United States only, User-Agent required; grid forecast data, two calls per place |
-| Basemap | OpenFreeMap vector tiles | Attribution |
+| Purpose                     | Service                                                         | Constraints                                                                               |
+| --------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Routing                     | OSRM public demo server (`router.project-osrm.org`)             | ≤ 1 req/s, best effort, car profile, valid User-Agent, attribution (ODbL + OSRM)          |
+| Routing fallback (optional) | openrouteservice `driving-hgv` (free API key via `ORS_API_KEY`) | Alternatives only ≤ 100 km, so used for single routes + via-point detours                 |
+| Geocoding                   | Photon (komoot) primary, Nominatim fallback                     | Nominatim: ≤ 1 req/s, no autocomplete use                                                 |
+| Weather                     | Open-Meteo forecast API                                         | Free tier 600/min, 5,000/h, 10,000/day, non-commercial, CC BY 4.0 attribution             |
+| Weather fallback            | US National Weather Service (`api.weather.gov`)                 | Keyless, United States only, User-Agent required; grid forecast data, two calls per place |
+| Basemap                     | OpenFreeMap vector tiles                                        | Attribution                                                                               |
 
 ## 3. Architecture
 
@@ -70,17 +70,17 @@ Principles:
 
 ### 3.1 Design patterns (apply where they earn their place, nowhere else)
 
-| Pattern | Where | Why |
-| --- | --- | --- |
-| Value objects (frozen dataclasses) | `domain/models.py`: `LatLon`, `Checkpoint`, `RouteScore`, `WeatherSample` | Immutability, easy equality in tests |
-| Ports and adapters (Protocol + adapter) | `providers/` implement `RoutingProvider`, `WeatherProvider`, `GeocodeProvider` | Swap services without touching domain; fixtures in tests |
-| Chain of responsibility | `FallbackRoutingProvider([osrm, ors])` | Provider failover |
-| Facade | `services/plan.py::PlanService` | One entry point orchestrating providers + domain |
-| Circuit breaker | `infra/http.py` per provider | Fail fast when a provider is down |
-| Cache-aside with stale-if-error | `infra/cache.py` | Serve slightly old data during outages |
-| Dependency injection (constructor) | `services/container.py` builds the object graph from settings | Testability, no globals |
-| Table-driven rules | `domain/risk.py` band tables as data | The brief's table maps 1:1 to code |
-| Frontend: container/presentational + custom hooks | `usePlan`, `useHeatmapFrames`, `useMapLayer` | Keep map imperative code out of components |
+| Pattern                                           | Where                                                                          | Why                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| Value objects (frozen dataclasses)                | `domain/models.py`: `LatLon`, `Checkpoint`, `RouteScore`, `WeatherSample`      | Immutability, easy equality in tests                     |
+| Ports and adapters (Protocol + adapter)           | `providers/` implement `RoutingProvider`, `WeatherProvider`, `GeocodeProvider` | Swap services without touching domain; fixtures in tests |
+| Chain of responsibility                           | `FallbackRoutingProvider([osrm, ors])`                                         | Provider failover                                        |
+| Facade                                            | `services/plan.py::PlanService`                                                | One entry point orchestrating providers + domain         |
+| Circuit breaker                                   | `infra/http.py` per provider                                                   | Fail fast when a provider is down                        |
+| Cache-aside with stale-if-error                   | `infra/cache.py`                                                               | Serve slightly old data during outages                   |
+| Dependency injection (constructor)                | `services/container.py` builds the object graph from settings                  | Testability, no globals                                  |
+| Table-driven rules                                | `domain/risk.py` band tables as data                                           | The brief's table maps 1:1 to code                       |
+| Frontend: container/presentational + custom hooks | `usePlan`, `useHeatmapFrames`, `useMapLayer`                                   | Keep map imperative code out of components               |
 
 Do not add: repositories over a DB we don't have, event buses, CQRS, microservices.
 
@@ -126,11 +126,11 @@ Levels (ordered int enum): `LOW=0, MODERATE=1, HIGH=2, SEVERE=3, NO_TRAVEL=4`, p
 
 Bands are half-open, lower bound inclusive; the top edge of Severe is inclusive where the brief says "> x" for No Travel:
 
-| Factor | LOW | MODERATE | HIGH | SEVERE | NO_TRAVEL |
-| --- | --- | --- | --- | --- | --- |
-| Wind (mph, sustained) | < 25 | [25, 35) | [35, 45) | [45, 55) | ≥ 55 |
-| Rain (in/hr) | < 0.10 | [0.10, 0.25) | [0.25, 0.50) | [0.50, 1.00] | > 1.00 |
-| Snow (in/hr) | < 0.5 | [0.5, 1.0) | [1.0, 2.0) | [2.0, 3.0] | > 3.0 |
+| Factor                | LOW    | MODERATE     | HIGH         | SEVERE       | NO_TRAVEL |
+| --------------------- | ------ | ------------ | ------------ | ------------ | --------- |
+| Wind (mph, sustained) | < 25   | [25, 35)     | [35, 45)     | [45, 55)     | ≥ 55      |
+| Rain (in/hr)          | < 0.10 | [0.10, 0.25) | [0.25, 0.50) | [0.50, 1.00] | > 1.00    |
+| Snow (in/hr)          | < 0.5  | [0.5, 1.0)   | [1.0, 2.0)   | [2.0, 3.0]   | > 3.0     |
 
 Load rules applied after the weather table, in order:
 
@@ -175,19 +175,19 @@ No Travel miles rank first (documented assumption: the brief lists Severe first 
 
 OpenAPI schema at `/api/schema/`; frontend types generated from it.
 
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET | `/api/health` | Liveness, no upstream calls |
-| GET | `/api/ready` | Readiness: breaker state per provider, cache reachable |
-| GET | `/api/geocode?q=` | ≥ 3 chars, ≤ 100 chars, cached 24 h, max 8 results |
-| POST | `/api/plan` | See below |
+| Method | Path              | Notes                                                  |
+| ------ | ----------------- | ------------------------------------------------------ |
+| GET    | `/api/health`     | Liveness, no upstream calls                            |
+| GET    | `/api/ready`      | Readiness: breaker state per provider, cache reachable |
+| GET    | `/api/geocode?q=` | ≥ 3 chars, ≤ 100 chars, cached 24 h, max 8 results     |
+| POST   | `/api/plan`       | See below                                              |
 
 Request:
 
 ```json
 {
-  "origin": {"lat": 41.8781, "lon": -87.6298, "label": "Chicago, IL"},
-  "destination": {"lat": 39.7392, "lon": -104.9903, "label": "Denver, CO"},
+  "origin": { "lat": 41.8781, "lon": -87.6298, "label": "Chicago, IL" },
+  "destination": { "lat": 39.7392, "lon": -104.9903, "label": "Denver, CO" },
   "departure_at": "2026-10-18T06:00:00-05:00",
   "load_lb": 42000,
   "interval_mi": 25
@@ -203,48 +203,85 @@ Response shape (abridged):
   "recommended_route_id": "r1",
   "recommendation_reason": "0 Severe miles vs 18 on Route B",
   "banner": null,
-  "routes": [{
-    "id": "r1", "label": "Route A", "rank": 1,
-    "distance_mi": 1003.4, "duration_s": 58200,
-    "geometry": {"type": "LineString", "coordinates": [[-87.63, 41.88]]},
-    "summary": {"miles_by_level": {"LOW": 812.0, "MODERATE": 160.4, "HIGH": 31.0, "SEVERE": 0, "NO_TRAVEL": 0},
-                "unknown_miles": 0, "avg_risk": 0.22, "worst_level": "HIGH", "low_confidence": false},
-    "checkpoints": [{"index": 1, "mile": 25.0, "lat": 41.6, "lon": -88.1, "eta": "2026-10-18T11:31:00Z",
-                     "wind_mph": 18.2, "gust_mph": 29.0, "rain_in_hr": 0.02, "snow_in_hr": 0,
-                     "level": "LOW", "reasons": []}]
-  }],
-  "heatmap": {"start": "2026-10-18T11:00:00Z", "points": [[41.9, -87.7]],
-              "frames": [{"risk": [0], "wind": [18.2], "rain": [0.02], "snow": [0]}]},
+  "routes": [
+    {
+      "id": "r1",
+      "label": "Route A",
+      "rank": 1,
+      "distance_mi": 1003.4,
+      "duration_s": 58200,
+      "geometry": { "type": "LineString", "coordinates": [[-87.63, 41.88]] },
+      "summary": {
+        "miles_by_level": {
+          "LOW": 812.0,
+          "MODERATE": 160.4,
+          "HIGH": 31.0,
+          "SEVERE": 0,
+          "NO_TRAVEL": 0
+        },
+        "unknown_miles": 0,
+        "avg_risk": 0.22,
+        "worst_level": "HIGH",
+        "low_confidence": false
+      },
+      "checkpoints": [
+        {
+          "index": 1,
+          "mile": 25.0,
+          "lat": 41.6,
+          "lon": -88.1,
+          "eta": "2026-10-18T11:31:00Z",
+          "wind_mph": 18.2,
+          "gust_mph": 29.0,
+          "rain_in_hr": 0.02,
+          "snow_in_hr": 0,
+          "level": "LOW",
+          "reasons": []
+        }
+      ]
+    }
+  ],
+  "heatmap": {
+    "start": "2026-10-18T11:00:00Z",
+    "points": [[41.9, -87.7]],
+    "frames": [{ "risk": [0], "wind": [18.2], "rain": [0.02], "snow": [0] }]
+  },
   "notes": ["ETAs assume continuous driving at ≤ 65 mph"],
-  "meta": {"routing_source": "osrm", "weather_source": "open-meteo", "weather_stale": false, "generated_at": "…", "request_id": "…"}
+  "meta": {
+    "routing_source": "osrm",
+    "weather_source": "open-meteo",
+    "weather_stale": false,
+    "generated_at": "…",
+    "request_id": "…"
+  }
 }
 ```
 
 Errors (single shape): `{"error": {"code": "NO_ROUTE", "message": "…", "field": null, "request_id": "…"}}`.
 
-| Status | Codes |
-| --- | --- |
-| 400 | `VALIDATION`, `TOO_CLOSE` |
-| 422 | `NO_ROUTE` |
-| 429 | `RATE_LIMITED` (our limit: 10 plans/min/IP, 60 geocode/min/IP) |
-| 502 | `UPSTREAM_ERROR` |
-| 503 | `UPSTREAM_UNAVAILABLE` (breaker open) |
-| 504 | `UPSTREAM_TIMEOUT` |
+| Status | Codes                                                          |
+| ------ | -------------------------------------------------------------- |
+| 400    | `VALIDATION`, `TOO_CLOSE`                                      |
+| 422    | `NO_ROUTE`                                                     |
+| 429    | `RATE_LIMITED` (our limit: 10 plans/min/IP, 60 geocode/min/IP) |
+| 502    | `UPSTREAM_ERROR`                                               |
+| 503    | `UPSTREAM_UNAVAILABLE` (breaker open)                          |
+| 504    | `UPSTREAM_TIMEOUT`                                             |
 
 Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner `WEATHER_UNAVAILABLE`.
 
 ## 6. Resilience
 
-| Concern | Rule |
-| --- | --- |
-| Timeouts | routing 8 s, weather 10 s, geocode 4 s (connect 3 s) |
-| Deadline budget | whole plan request 20 s; each call gets `min(own timeout, remaining budget)` |
-| Retries | 1 retry on 5xx / 429 / connect errors, exponential backoff with full jitter (base 300 ms); never on 4xx |
-| Circuit breaker | per provider: open after 3 consecutive failures, half-open after 60 s |
-| Bulkheads | separate concurrency limit per provider (OSRM 1, Open-Meteo 4, NWS 16, geocode 2) |
-| Fallbacks | routing OSRM → ORS (if key); weather Open-Meteo → NWS (only for places Open-Meteo could not supply) → stale cache → UNKNOWN; geocode Photon → Nominatim |
-| Rate limiting | per-IP limits (django-ratelimit) backed by the cache |
-| Cache | Django cache framework; LocMem by default, Redis via `REDIS_URL` |
+| Concern         | Rule                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timeouts        | routing 8 s, weather 10 s, geocode 4 s (connect 3 s)                                                                                                    |
+| Deadline budget | whole plan request 20 s; each call gets `min(own timeout, remaining budget)`                                                                            |
+| Retries         | 1 retry on 5xx / 429 / connect errors, exponential backoff with full jitter (base 300 ms); never on 4xx                                                 |
+| Circuit breaker | per provider: open after 3 consecutive failures, half-open after 60 s                                                                                   |
+| Bulkheads       | separate concurrency limit per provider (OSRM 1, Open-Meteo 4, NWS 16, geocode 2)                                                                       |
+| Fallbacks       | routing OSRM → ORS (if key); weather Open-Meteo → NWS (only for places Open-Meteo could not supply) → stale cache → UNKNOWN; geocode Photon → Nominatim |
+| Rate limiting   | per-IP limits (django-ratelimit) backed by the cache                                                                                                    |
+| Cache           | Django cache framework; LocMem by default, Redis via `REDIS_URL`                                                                                        |
 
 ## 7. Frontend
 
