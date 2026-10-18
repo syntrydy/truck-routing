@@ -144,7 +144,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - Frames precomputed with `useMemo`, `setData` on slider change via rAF, play/pause, keyboard, variable toggle, unknown cells grey, zoom fade to circles, truck marker on selected route at slider hour.
   - AC: frame builder unit-tested; slider interaction test; manual perf check recorded in PR (fps from Performance panel).
 
-- [ ] **B-33 feat(web): loading, cold-start, error and mobile states** — `type:feat` `area:frontend`
+- [x] **B-33 feat(web): loading, cold-start, error and mobile states** — #76 — `type:feat` `area:frontend`
   - Cold-start message after 3 s without health response, progress steps, error messages per code with suggestions, mobile bottom sheet, focus management.
   - AC: tests for each state; Lighthouse accessibility ≥ 95 on the built app.
 
