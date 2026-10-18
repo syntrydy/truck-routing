@@ -2,7 +2,7 @@
 
 Candidates come from the routing provider (alternatives plus detours through via
 points). The fastest is always kept; others are dropped when they are an overlong
-detour or mostly follow a route that was already kept.
+detour, a detour that doubles back, or mostly follow a route that was already kept.
 """
 
 from collections.abc import Sequence
@@ -13,6 +13,7 @@ from planner.domain.geometry import (
     bearing_deg,
     cumulative_distances_m,
     haversine_m,
+    min_straightness,
     perpendicular_offset,
     point_at_distance,
     sample_along,
@@ -33,6 +34,12 @@ NEAR_DISTANCE_M = 1_000.0
 # The proximity index looks at route points this far apart; the search radius is widened
 # by half of that so a point truly within NEAR_DISTANCE_M of the line is never missed.
 INDEX_SPACING_M = NEAR_DISTANCE_M / 4
+# A detour is dropped when, over some stretch of this much road, its ends are less than
+# MIN_STRAIGHTNESS of that apart in a straight line: it goes out and comes back, or leaves the
+# road and rejoins it. Provider routes never go below 0.64 on the trips tried (mountain roads
+# included); detours through a via point beside no good road often fall to 0.3 to 0.55.
+STRAIGHTNESS_WINDOW_M = 100_000.0
+MIN_STRAIGHTNESS = 0.6
 
 
 @dataclass(frozen=True, slots=True)
@@ -92,6 +99,8 @@ def select_routes(candidates: Sequence[RouteCandidate]) -> Selection:
             break
         if candidate.is_detour and candidate.distance_m > fastest.distance_m * MAX_DETOUR_RATIO:
             continue
+        if candidate.is_detour and _backtracks(candidate.points):
+            continue
         if _overlap_share(candidate.points, indexes) > DUPLICATE_OVERLAP_SHARE:
             continue
         kept.append(candidate)
@@ -99,6 +108,11 @@ def select_routes(candidates: Sequence[RouteCandidate]) -> Selection:
 
     notes = (_too_few_note(len(kept)),) if len(kept) < MAX_ROUTES else ()
     return Selection(routes=tuple(kept), notes=notes)
+
+
+def _backtracks(points: Sequence[LatLon]) -> bool:
+    """Whether the route doubles back: over some stretch it hardly gets anywhere."""
+    return min_straightness(points, STRAIGHTNESS_WINDOW_M) < MIN_STRAIGHTNESS
 
 
 def _too_few_note(count: int) -> str:

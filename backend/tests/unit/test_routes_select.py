@@ -10,6 +10,7 @@ from planner.domain.geometry import (
 from planner.domain.models import LatLon
 from planner.domain.routes_select import (
     MAX_ROUTES,
+    MIN_STRAIGHTNESS,
     RouteCandidate,
     select_routes,
     via_points,
@@ -294,3 +295,70 @@ def test_selection_is_fast_on_cross_country_routes() -> None:
 
     assert ids(selection.routes) == ["main", "shifted"]
     assert elapsed < 10.0
+
+
+def with_spur(
+    route_id: str, spur_km: float, duration_s: float, *, is_detour: bool
+) -> RouteCandidate:
+    """100 km east on a line north of the base route, with a spur north and back in the middle."""
+    origin = destination_point(START, NORTH, 30 * KM)
+    middle = destination_point(origin, EAST, 50 * KM)
+    tip = destination_point(middle, NORTH, spur_km * KM)
+    points = [
+        *line(origin, EAST, 50 * KM),
+        *line(middle, NORTH, spur_km * KM)[1:],
+        *list(reversed(line(middle, NORTH, spur_km * KM)))[1:],
+        *line(middle, EAST, 50 * KM)[1:],
+    ]
+    assert tip in points
+    return candidate(route_id, points, duration_s, is_detour=is_detour)
+
+
+class TestSpurs:
+    """A detour that goes out and comes back the same way is not a route anyone would drive."""
+
+    def test_a_detour_with_a_long_spur_is_dropped_and_the_user_is_told(self) -> None:
+        result = select_routes([base(), with_spur("spur", 20.0, 4_000.0, is_detour=True)])
+
+        assert [route.route_id for route in result.routes] == ["base"]
+        assert result.notes == ("Only 1 distinct route exists for this trip",)
+
+    @pytest.mark.parametrize(("spur_km", "kept"), [(4.0, True), (30.0, False)])
+    def test_a_short_turn_around_is_kept_and_a_real_spur_is_not(
+        self, spur_km: float, kept: bool
+    ) -> None:
+        assert MIN_STRAIGHTNESS == 0.6
+
+        result = select_routes([base(), with_spur("spur", spur_km, 4_000.0, is_detour=True)])
+
+        assert ("spur" in [route.route_id for route in result.routes]) is kept
+
+    def test_a_dogleg_that_leaves_the_road_and_rejoins_it_is_dropped(self) -> None:
+        # North 50 km, west 40 km, south 50 km: the shape of a detour through a point beside
+        # no road that leads on.
+        origin = destination_point(START, NORTH, 30 * KM)
+        a = destination_point(origin, EAST, 50 * KM)
+        b = destination_point(a, NORTH, 50 * KM)
+        c = destination_point(b, EAST, 40 * KM)
+        d = destination_point(c, 180.0, 50 * KM)
+        e = destination_point(d, EAST, 40 * KM)
+        dogleg = candidate(
+            "dogleg", [*line(origin, EAST, 50 * KM), b, c, d, e], 4_000.0, is_detour=True
+        )
+
+        result = select_routes([base(), dogleg])
+
+        assert [route.route_id for route in result.routes] == ["base"]
+
+    def test_the_same_shape_from_the_provider_is_not_judged(self) -> None:
+        # Provider alternatives are sensible by construction; only forced detours are checked.
+        result = select_routes([base(), with_spur("spur", 20.0, 4_000.0, is_detour=False)])
+
+        assert [route.route_id for route in result.routes] == ["base", "spur"]
+
+    def test_a_good_detour_is_kept_after_a_spur_one_is_dropped(self) -> None:
+        good = parallel("good", 30 * KM, 4_500.0, is_detour=True)
+
+        result = select_routes([base(), with_spur("spur", 20.0, 4_000.0, is_detour=True), good])
+
+        assert [route.route_id for route in result.routes] == ["base", "good"]
