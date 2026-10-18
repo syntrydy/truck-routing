@@ -146,6 +146,17 @@ def weather_key(point: LatLon, first_day: date, last_day: date) -> str:
     return f"{KEY_PREFIX}:weather:{_coordinate(point, WEATHER_DECIMALS)}:{days}"
 
 
+def nws_weather_key(point: LatLon, first_day: date, last_day: date) -> str:
+    """Key of a point's hourly weather from the NWS; kept apart from Open-Meteo's."""
+    days = f"{first_day.isoformat()}:{last_day.isoformat()}"
+    return f"{KEY_PREFIX}:weather-nws:{_coordinate(point, WEATHER_DECIMALS)}:{days}"
+
+
+def nws_grid_key(point: LatLon) -> str:
+    """Key of the NWS forecast grid cell a point is in; points are rounded to 0.1°."""
+    return f"{KEY_PREFIX}:nws-grid:{_coordinate(point, WEATHER_DECIMALS)}"
+
+
 def geocode_key(query: str, provider: str) -> str:
     """Key of a geocoding query, ignoring case and extra whitespace."""
     normalised = " ".join(query.lower().split())

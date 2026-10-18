@@ -1,0 +1,9 @@
+{
+  "properties": {
+    "gridId": "BOU",
+    "gridX": 53,
+    "gridY": 74,
+    "forecastGridData": "https://api.weather.gov/gridpoints/BOU/53,74",
+    "timeZone": "America/Denver"
+  }
+}
