@@ -165,6 +165,7 @@ make be-test ARGS="-k risk"         # a focused backend run
 make fe-e2e                         # the browser test (first: cd frontend && npx playwright install chromium)
 ```
 
+- **The brief's rules, to read beside the brief:** [`backend/tests/unit/test_brief_cases.py`](backend/tests/unit/test_brief_cases.py) is the wind, rain and snow bands, the three load rules, the worst-factor rule, missing weather and the ranking order as plain cases, one line each with the level a truck is told, with a case on both sides of every edge (47 mph with 30,000 lb is Severe, with 30,001 lb it is No Travel). If you read the brief differently, that is the line to challenge.
 - **Backend:** pytest with a coverage gate in CI (the whole backend at least 85%; the pure domain is at 100% and the backend overall at 99%). Boundary values of every band are tested on both sides, with property tests for ordering; providers are tested against recorded responses and never touch the network.
 - **Frontend:** Vitest and Testing Library for components, hooks and map code (MapLibre is replaced by a fake), and axe-core for accessibility.
 - **End to end:** two Playwright tests run against the real API on recorded responses. One plans a trip, opens a checkpoint on the map and moves the forecast; the other runs the stormy demo and checks the danger, the recommendation and the banner.
