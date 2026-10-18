@@ -12,6 +12,7 @@ import { SEARCH_DELAY_MS } from "./PlaceInput.tsx";
 import { TripForm } from "./TripForm.tsx";
 
 beforeEach(() => {
+  geocode.mockImplementation(defaultGeocode);
   vi.useFakeTimers();
 });
 afterEach(() => {
@@ -24,9 +25,9 @@ async function pass(ms: number) {
   });
 }
 
-const geocode = vi.fn<ApiClient["geocode"]>((query) =>
-  Promise.resolve({ results: query.toLowerCase().startsWith("chi") ? [CHICAGO] : [DENVER] }),
-);
+const defaultGeocode: ApiClient["geocode"] = (query) =>
+  Promise.resolve({ results: query.toLowerCase().startsWith("chi") ? [CHICAGO] : [DENVER] });
+const geocode = vi.fn<ApiClient["geocode"]>(defaultGeocode);
 
 /** The form with a plan already made for `initial`, as the page holds it. */
 function Page({
@@ -61,7 +62,9 @@ function setup(initial: PlanRequest | null = null) {
 type User = ReturnType<typeof userEvent.setup>;
 
 async function choosePlace(user: User, label: string, typed: string) {
-  await user.type(screen.getByRole("combobox", { name: label }), typed);
+  const field = screen.getByRole("combobox", { name: label });
+  await user.clear(field);
+  await user.type(field, typed);
   await pass(SEARCH_DELAY_MS);
   await pass(10);
   await user.keyboard("{ArrowDown}{Enter}");
@@ -70,6 +73,11 @@ async function choosePlace(user: User, label: string, typed: string) {
 async function fillValidTrip(user: User) {
   await choosePlace(user, "From", "chicago");
   await choosePlace(user, "To", "denver");
+}
+
+async function clearPlaces(user: User) {
+  await user.clear(screen.getByRole("combobox", { name: "From" }));
+  await user.clear(screen.getByRole("combobox", { name: "To" }));
 }
 
 const submitButton = () => screen.getByRole("button", { name: /plan trip|re-plan/i });
@@ -84,6 +92,13 @@ describe("the fields", () => {
     expect(screen.getByLabelText("Load (lb)")).toHaveValue("42000");
     expect(screen.getByRole("group", { name: "Checkpoint every" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "25 mi" })).toBeChecked();
+  });
+
+  it("starts with Chicago to Denver filled in", () => {
+    setup();
+
+    expect(screen.getByRole("combobox", { name: "From" })).toHaveValue(CHICAGO.label);
+    expect(screen.getByRole("combobox", { name: "To" })).toHaveValue(DENVER.label);
   });
 
   it("names the time zone the departure is read in", () => {
@@ -160,6 +175,7 @@ describe("validation", () => {
 
   it("shows every problem when the form is submitted, and sends nothing", async () => {
     const { user, onSubmit } = setup();
+    await clearPlaces(user);
 
     await user.click(submitButton());
 
@@ -170,6 +186,7 @@ describe("validation", () => {
 
   it("moves focus to the first field with a problem", async () => {
     const { user } = setup();
+    await clearPlaces(user);
 
     await user.click(submitButton());
     await pass(50);
@@ -179,9 +196,9 @@ describe("validation", () => {
 
   it("refuses a destination under a mile from the start", async () => {
     const { user } = setup();
-    geocode.mockImplementationOnce(() => Promise.resolve({ results: [CHICAGO] }));
-    geocode.mockImplementationOnce(() =>
-      Promise.resolve({ results: [{ ...CHICAGO, label: "Next door", lat: CHICAGO.lat + 0.004 }] }),
+    const nextDoor = { ...CHICAGO, label: "Next door", lat: CHICAGO.lat + 0.004 };
+    geocode.mockImplementation((query) =>
+      Promise.resolve({ results: query === "next door" ? [nextDoor] : [CHICAGO] }),
     );
 
     await choosePlace(user, "From", "chicago");
@@ -193,6 +210,19 @@ describe("validation", () => {
 });
 
 describe("submitting", () => {
+  it("plans the default trip without any input", async () => {
+    const { user, onSubmit } = setup();
+
+    await user.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        origin: { lat: CHICAGO.lat, lon: CHICAGO.lon, label: CHICAGO.label },
+        destination: { lat: DENVER.lat, lon: DENVER.lon, label: DENVER.label },
+      }),
+    );
+  });
+
   it("sends the request the API expects", async () => {
     const { user, onSubmit } = setup();
     await fillValidTrip(user);
@@ -274,6 +304,7 @@ describe("accessibility", () => {
     const { container } = setup();
     await expectNoA11yViolations(container);
 
+    await clearPlaces(user);
     await user.click(submitButton());
     expect(screen.getByText(/Choose a starting place/)).toBeInTheDocument();
     await expectNoA11yViolations(container);

@@ -21,7 +21,8 @@ interface PlaceInputProps {
 export function PlaceInput({ id, label, value, onChange, onBlur, error }: PlaceInputProps) {
   const [text, setText] = useState(value?.label ?? "");
   const debounced = useDebouncedValue(text, SEARCH_DELAY_MS);
-  const search = useGeocode(value === null ? debounced : "");
+  // Search only for the text as it now stands, never the previous text while the pause runs out.
+  const search = useGeocode(value === null && debounced === text ? debounced : "");
   const wanted = value === null && normalizeQuery(text).length >= MIN_QUERY_LENGTH;
 
   let status: SearchStatus = "idle";
