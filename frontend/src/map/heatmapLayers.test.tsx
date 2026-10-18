@@ -66,12 +66,12 @@ const shownValues = (map: FakeMap) =>
   );
 
 describe("the layers", () => {
-  it("are a heat layer and a circle layer, under the basemap's place names", async () => {
+  it("are two circle layers, a soft one and a crisp one, under the basemap's place names", async () => {
     const { map } = await installed();
 
     const layers = map.layers.filter((layer) => layer.source === "heatmap");
     expect(layers.map(({ id, type }) => [id, type])).toEqual([
-      ["heatmap-glow", "heatmap"],
+      ["heatmap-glow", "circle"],
       ["heatmap-points", "circle"],
     ]);
     expect(layers.every((layer) => layer.before === "place-labels")).toBe(true);
