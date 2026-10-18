@@ -166,6 +166,6 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - README: overview, live links, architecture diagram (mermaid), how it works (pipeline), assumptions register, API summary, local setup in ≤ 3 commands, testing, security scanning, known limits, scaling path. ADRs in `docs/adr/` for: routing provider choice, risk boundary interpretation, No Travel ranking, single-payload heatmap.
   - AC: a new developer can run the app locally from the README alone.
 
-- [ ] **B-38 chore: final quality audit** — `type:chore` `area:infra`
+- [x] **B-38 chore: final quality audit** — #99 — `type:chore` `area:infra`
   - All scanners clean (no ignored high findings without justification), coverage gates met, dependency versions current, no TODOs, PR/issue history tidy, release tag `v1.0.0` with changelog generated from Conventional Commits.
   - AC: checklist in the PR fully ticked.

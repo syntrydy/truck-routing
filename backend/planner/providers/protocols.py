@@ -126,12 +126,14 @@ class Place:
             raise ValueError(msg)
 
 
+QUERY_LENGTH_MESSAGE = f"query must be {MIN_QUERY_LENGTH} to {MAX_QUERY_LENGTH} characters"
+
+
 def normalize_query(query: str) -> str:
     """The query with whitespace collapsed, checked to be 3 to 100 characters long."""
     cleaned = " ".join(query.split())
     if not MIN_QUERY_LENGTH <= len(cleaned) <= MAX_QUERY_LENGTH:
-        msg = f"query must be {MIN_QUERY_LENGTH} to {MAX_QUERY_LENGTH} characters"
-        raise ValueError(msg)
+        raise ValueError(QUERY_LENGTH_MESSAGE)
     return cleaned
 
 

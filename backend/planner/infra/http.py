@@ -145,7 +145,8 @@ class UpstreamClient:
         self._user_agent = user_agent
         self._http = http_client or httpx.Client(follow_redirects=False)
         self._sleep = sleep
-        self._jitter: Jitter = jitter or random.Random()  # noqa: S311  # nosec B311 - backoff jitter, not security
+        # Backoff jitter, not security.
+        self._jitter: Jitter = jitter or random.Random()  # noqa: S311  # nosec B311
 
     def breaker_states(self) -> dict[str, BreakerState]:
         """The circuit breaker state of every provider. Makes no request."""

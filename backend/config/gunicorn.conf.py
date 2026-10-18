@@ -16,7 +16,8 @@ threads = int(os.environ.get("GUNICORN_THREADS", "4"))
 timeout = 20 + PLAN_BUDGET_MARGIN_S
 graceful_timeout = timeout
 keepalive = 5
-worker_tmp_dir = "/dev/shm"  # noqa: S108  # nosec B108 - heartbeat files in memory, as gunicorn advises
+# Heartbeat files in memory, as gunicorn advises.
+worker_tmp_dir = "/dev/shm"  # noqa: S108  # nosec B108
 
 # The same JSON logs as the application. Requests are not logged line by line: the plan
 # record and the error handler already say what matters.
