@@ -3,6 +3,7 @@
 A web app that recommends the safest truck route between two places, based on the weather along the route at the estimated arrival time, the load weight and the travel time.
 
 - **App:** https://truck-routing-web.vercel.app
+- **Video walkthrough:** https://www.loom.com/share/07ce39d077ad4f85a8aae625e57ae954
 - **API:** https://truck-routing-api-dw0w.onrender.com (health: `/api/health`, readiness: `/api/ready`, schema: `/api/schema/`)
 
 The API is on a free plan and sleeps when idle, so the first request after a quiet period takes up to a minute.
