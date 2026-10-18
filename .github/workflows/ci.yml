@@ -55,6 +55,12 @@ jobs:
         run: |
           SECRET_KEY="$(uv run python -c 'import secrets; print(secrets.token_urlsafe(50))')" \
             uv run python manage.py check --deploy --fail-level WARNING
+      # Last, because it removes the development packages: the app must import with only the
+      # runtime dependencies, as it does when deployed.
+      - name: Production install imports cleanly
+        run: |
+          uv sync --frozen --no-dev
+          uv run --no-sync python manage.py check
 
   frontend:
     name: Frontend

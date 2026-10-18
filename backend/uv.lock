@@ -1516,6 +1516,7 @@ dependencies = [
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
     { name = "gunicorn" },
+    { name = "httpx" },
     { name = "redis" },
 ]
 
@@ -1543,6 +1544,7 @@ requires-dist = [
     { name = "djangorestframework", specifier = ">=3.18.3" },
     { name = "drf-spectacular", specifier = ">=0.30.0" },
     { name = "gunicorn", specifier = ">=26.2.0" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "redis", specifier = ">=8.1.0" },
 ]
 
