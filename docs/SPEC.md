@@ -39,6 +39,7 @@ External services (all keyless unless noted):
 | Routing fallback (optional) | openrouteservice `driving-hgv` (free API key via `ORS_API_KEY`) | Alternatives only ≤ 100 km, so used for single routes + via-point detours |
 | Geocoding | Photon (komoot) primary, Nominatim fallback | Nominatim: ≤ 1 req/s, no autocomplete use |
 | Weather | Open-Meteo forecast API | Free tier 600/min, 5,000/h, 10,000/day, non-commercial, CC BY 4.0 attribution |
+| Weather fallback | US National Weather Service (`api.weather.gov`) | Keyless, United States only, User-Agent required; grid forecast data, two calls per place |
 | Basemap | OpenFreeMap vector tiles | Attribution |
 
 ## 3. Architecture
@@ -117,6 +118,7 @@ Interval `d ∈ {10, 25, 50}` miles. Using cumulative haversine distance and cum
 - Hour selection: precipitation values are sums over the **preceding** hour → for ETA `t` use the value at `ceil_hour(t)`. Wind is instantaneous → linear interpolation between `floor_hour(t)` and `ceil_hour(t)`.
 - `rain_rate = rain + showers`; `snow_rate = snowfall`.
 - ETA outside returned series or value `null` → that factor `UNKNOWN`.
+- Fallback source: places Open-Meteo cannot supply (for example when its daily limit is exhausted) are asked of the NWS in the order given, checkpoints first, then the heatmap grid, within the same request budget. The NWS grid forecast is converted to the same units and the same convention (a precipitation value at hour `h` covers the hour before `h`): km/h → mph; precipitation and snowfall totals in mm are spread evenly over their interval and converted to in/hr; rain is the precipitation total minus the snow's meltwater (snowfall ÷ 10). Places the NWS does not cover stay `UNKNOWN`. `meta.weather_source` is `open-meteo`, `nws`, or `open-meteo+nws`.
 
 ### 4.5 Risk classification
 
@@ -239,8 +241,8 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 | Deadline budget | whole plan request 20 s; each call gets `min(own timeout, remaining budget)` |
 | Retries | 1 retry on 5xx / 429 / connect errors, exponential backoff with full jitter (base 300 ms); never on 4xx |
 | Circuit breaker | per provider: open after 3 consecutive failures, half-open after 60 s |
-| Bulkheads | separate concurrency limit per provider (OSRM 1, Open-Meteo 4, geocode 2) |
-| Fallbacks | routing OSRM → ORS (if key); weather → stale cache → UNKNOWN; geocode Photon → Nominatim |
+| Bulkheads | separate concurrency limit per provider (OSRM 1, Open-Meteo 4, NWS 16, geocode 2) |
+| Fallbacks | routing OSRM → ORS (if key); weather Open-Meteo → NWS (only for places Open-Meteo could not supply) → stale cache → UNKNOWN; geocode Photon → Nominatim |
 | Rate limiting | per-IP limits (django-ratelimit) backed by the cache |
 | Cache | Django cache framework; LocMem by default, Redis via `REDIS_URL` |
 
@@ -312,3 +314,4 @@ Makefile README.md render.yaml .pre-commit-config.yaml
 7. Slider hour 0 = departure time (rounded down to the hour).
 8. Truck speed capped at 65 mph; no rest breaks.
 9. Routing provider may be car-profile; truck restrictions not guaranteed.
+10. NWS fallback weather: snow melts to a tenth of its depth, and interval totals are spread evenly over their hours (peaks within a 6-hour interval are smoothed).
