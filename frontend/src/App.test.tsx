@@ -131,7 +131,10 @@ describe("App", () => {
     await screen.findByRole("button", { name: "Route R2" });
 
     act(() => {
-      fake.maps[0]?.emit("mousemove", "routes-line", { features: [{ properties: { id: "r2" } }] });
+      fake.maps[0]?.emit("mousemove", "routes-line", {
+        features: [{ properties: { id: "r2" } }],
+        lngLat: { lng: -95, lat: 40.5 },
+      });
     });
 
     expect(screen.getByRole("button", { name: "Route R2" }).closest("li")).toHaveClass(

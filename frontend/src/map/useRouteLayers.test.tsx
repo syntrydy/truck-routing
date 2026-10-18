@@ -221,7 +221,10 @@ describe("moving the view", () => {
 });
 
 describe("pointing at routes", () => {
-  const routeEvent = (id: string) => ({ features: [{ properties: { id } }] });
+  const routeEvent = (id: string, lngLat = { lng: -95, lat: 40.5 }) => ({
+    features: [{ properties: { id } }],
+    lngLat,
+  });
 
   it("reports the route under the pointer, and shows a pointer cursor", async () => {
     const { map, callbacks } = await installed();
@@ -283,6 +286,89 @@ describe("pointing at routes", () => {
     expect(later).toHaveBeenCalledWith("r1");
     expect(callbacks.onSelectRoute).not.toHaveBeenCalled();
     expect(map.handlers.get(`click:${ROUTES_LINE_LAYER}`)).toHaveLength(1);
+  });
+});
+
+describe("the summary beside the pointer on a route", () => {
+  const routeEvent = (id: string, lng = -95) => ({
+    features: [{ properties: { id } }],
+    lngLat: { lng, lat: 40.5 },
+  });
+  const withPlan = () => installed(props({ plan: samplePlan() }));
+  const summaries = () => fake.popups.filter((popup) => popup.content?.className === "route-tip");
+
+  it("shows the route's figures next to the pointer", async () => {
+    const { map } = await withPlan();
+
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1"));
+
+    expect(summaries()).toHaveLength(1);
+    expect(summaries()[0]?.content?.textContent).toMatch(
+      /^Route R1 · 1 h 40 min · 100 mi · Worst: Low$/,
+    );
+    expect(summaries()[0]?.lngLat).toEqual([-95, 40.5]);
+    expect(summaries()[0]?.options).toMatchObject({ closeButton: false, closeOnClick: false });
+  });
+
+  it("follows the pointer along the same route without making another", async () => {
+    const { map } = await withPlan();
+
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1", -95));
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1", -94));
+
+    expect(summaries()).toHaveLength(1);
+    expect(summaries()[0]?.lngLat).toEqual([-94, 40.5]);
+    expect(summaries()[0]?.remove).not.toHaveBeenCalled();
+  });
+
+  it("moves to the other route when the pointer does", async () => {
+    const { map } = await withPlan();
+
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1"));
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r2"));
+
+    expect(summaries()).toHaveLength(2);
+    expect(summaries()[0]?.remove).toHaveBeenCalledTimes(1);
+    expect(summaries()[1]?.content?.textContent).toMatch(/^Route R2/);
+  });
+
+  it("goes when the pointer leaves", async () => {
+    const { map } = await withPlan();
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1"));
+
+    map.emit("mouseleave", ROUTES_LINE_LAYER);
+
+    expect(summaries()[0]?.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows after a click too, for a screen with no pointer movement", async () => {
+    const { map, callbacks } = await withPlan();
+
+    map.emit("click", ROUTES_LINE_LAYER, routeEvent("r2"));
+
+    expect(callbacks.onSelectRoute).toHaveBeenCalledWith("r2");
+    expect(summaries()[0]?.content?.textContent).toMatch(/^Route R2/);
+  });
+
+  it("goes when the plan changes", async () => {
+    const { map, rerender, callbacks } = await withPlan();
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1"));
+
+    rerender(<MapView {...callbacks} plan={null} />);
+
+    expect(summaries()[0]?.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not take the place of the checkpoint popup", async () => {
+    const { map } = await withPlan();
+    map.emit("mousemove", ROUTES_LINE_LAYER, routeEvent("r1"));
+
+    map.emit("click", CHECKPOINTS_LAYER, {
+      features: [{ properties: { routeId: "r1", index: 0 } }],
+    });
+
+    expect(fake.popups.filter((popup) => popup.content?.className === "popup")).toHaveLength(1);
+    expect(summaries()[0]?.remove).not.toHaveBeenCalled();
   });
 });
 
