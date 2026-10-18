@@ -65,11 +65,50 @@ export function sampleHeatmap(frameCount = 49): PlanResponse["heatmap"] {
   };
 }
 
+/** The ranking of the sample plan: r1 wins on average risk, after tying on the three mileages. */
+export function sampleRanking(): PlanResponse["ranking"] {
+  const criterion = (
+    id: "NO_TRAVEL_MI" | "SEVERE_MI" | "HIGH_MI" | "AVG_RISK" | "DURATION",
+    label: string,
+    unit: "mi" | "risk" | "s",
+    first: number | null,
+    second: number | null,
+    { decisive = false, tie = false } = {},
+  ) => ({
+    id,
+    label,
+    unit,
+    decisive,
+    values: [
+      {
+        route_id: "r1",
+        value: first,
+        best: tie || (first !== null && (second === null || first <= second)),
+      },
+      {
+        route_id: "r2",
+        value: second,
+        best: tie || (second !== null && (first === null || second <= first)),
+      },
+    ],
+  });
+  return {
+    criteria: [
+      criterion("NO_TRAVEL_MI", "No Travel miles", "mi", 0, 0, { tie: true }),
+      criterion("SEVERE_MI", "Severe miles", "mi", 0, 0, { tie: true }),
+      criterion("HIGH_MI", "High-risk miles", "mi", 0, 0, { tie: true }),
+      criterion("AVG_RISK", "Average risk", "risk", 0.15, 0.27, { decisive: true }),
+      criterion("DURATION", "Travel time", "s", 35_820, 35_880),
+    ],
+  };
+}
+
 /** Two routes from Chicago towards Denver: r1 recommended, r2 the slower one to its south. */
 export function samplePlan(): PlanResponse {
   return {
     recommended_route_id: "r1",
     recommendation_reason: "Lowest weather risk",
+    ranking: sampleRanking(),
     banner: null,
     routes: [
       route(

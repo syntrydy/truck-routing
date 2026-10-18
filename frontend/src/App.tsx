@@ -5,6 +5,7 @@ import { useWarmUp } from "./api/useWarmUp.ts";
 import { AppShell } from "./components/AppShell.tsx";
 import { PlanBanners } from "./components/PlanBanners.tsx";
 import { PlanStatus } from "./components/PlanStatus.tsx";
+import { RankingTable } from "./components/RankingTable.tsx";
 import { ServerStatus } from "./components/ServerStatus.tsx";
 import { RouteCards } from "./components/RouteCards.tsx";
 import { TripForm } from "./components/TripForm.tsx";
@@ -136,6 +137,7 @@ export function App() {
                 onSelect={setChosenId}
                 onHover={setHoveredId}
               />
+              <RankingTable plan={plan.data} />
             </>
           )}
         </>
