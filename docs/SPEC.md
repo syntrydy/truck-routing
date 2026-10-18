@@ -161,6 +161,7 @@ Sort key (ascending):
 No Travel miles rank first (documented assumption: the brief lists Severe first but a No-Travel route must never outrank a Severe one). Rounding prevents float noise from deciding.
 
 - `recommendation_reason` = first criterion that separates #1 from #2, phrased for humans.
+- `ranking` lays the same comparison out for display: the five criteria (No Travel miles, Severe miles, High-risk miles, average risk, travel time) in the order applied, each with every route's value (the rounded one the ranking compared; `null` for an unknown average risk), whether it is the best, and `decisive` on the first criterion where #1 and #2 differ. The sentence and the table find that criterion with one function, so they cannot disagree.
 - If every route has `no_travel_miles > 0` → `recommended_route_id = null`, banner `NO_SAFE_ROUTE`; routes still ranked.
 - Unknown miles never count as Low.
 
@@ -203,6 +204,17 @@ Response shape (abridged):
 {
   "recommended_route_id": "r1",
   "recommendation_reason": "0 Severe miles vs 18 on Route B",
+  "ranking": {
+    "criteria": [
+      {
+        "id": "SEVERE_MI",
+        "label": "Severe miles",
+        "unit": "mi",
+        "decisive": true,
+        "values": [{ "route_id": "r1", "value": 0.0, "best": true }]
+      }
+    ]
+  },
   "banner": null,
   "routes": [
     {
@@ -296,6 +308,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 - Heatmap: one soft circle per grid point in that point's own colour on the legend's scale (green → yellow → orange → red → purple, unknown = grey), sized by the grid spacing so neighbours join up, the worse point drawn on top where they meet; fades to crisp circles above zoom 8. Not a MapLibre `heatmap` layer: that colours by the density of points, so overlapping Moderate points would add up to red. A caption says the map shows the slider's time and the dots on the routes show the arrival time. 49 FeatureCollections built once with `useMemo`; slider calls `setData`, throttled with `requestAnimationFrame`. Play button steps 1 h / 400 ms. Toggle: risk / wind / rain / snow. Label shows absolute local time and offset.
 - Planned trip: once a plan arrives the form folds (hidden, so nothing typed is lost) into a one-line summary ("Denver → Salt Lake City · Sun 8:33 PM · 42,000 lb · every 25 mi") with an Edit trip button, so the route cards fit on screen; Edit opens the form with focus in its first field, and a failed plan keeps it open.
 - Route lines: each route keeps one pattern whatever its rank or selection (Route A solid, B dashed, C dotted, a layer per pattern because a dash pattern cannot vary by feature) and its letter is drawn along it over a white halo, so routes differ by more than colour. The card shows the same pattern as a swatch.
+- Why this route?: under the cards, a table of the ranking criteria in the order applied, one column per route (best first), with the best value of a row that tells routes apart marked in words and with a check mark, and the deciding row labelled "decided here". Titled "How the routes were ranked" when no route is safe.
 - Route cards: rank badge, duration, distance, stacked bar of miles by level, reason on the winner; hover highlights the route and shows a one-line summary beside the pointer ("Route A · 9 h · 505 mi · 100 mi No travel"); click selects it and keeps the summary (a touch screen has no hover).
 - Checkpoint popup: ETA (local, with tz), wind, gust, rain, snow, level, reasons.
 - Demo: a "Try the stormy demo" button sets the form to the recorded trip (keeping the load and the spacing) and calls `/api/demo`; a plan whose weather source is `demo` carries a banner that it is a recording, not a live forecast. Try again repeats the demo.

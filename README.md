@@ -32,6 +32,7 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 - A stormy demo for when the weather is calm: Denver to Salt Lake City in a recording of a real wind storm on I-80 in Wyoming, planned by the same code as a live trip, clearly labeled as a recording.
 - Plan a trip from one place to another with a departure time, a load weight and a checkpoint spacing (10, 25 or 50 miles).
 - Up to three distinct routes, each with checkpoints that show the estimated arrival time and the weather expected at that moment: wind, gusts, rain and snow.
+- A "Why this route?" table under the cards: the ranking criteria in order, each route's value, and the row where the decision was made.
 - Every checkpoint has a risk level (Low, Moderate, High, Severe, No Travel, or Unknown) and the reasons for it, such as "Wind 47 mph with 42,000 lb load".
 - A ranked recommendation that says why it won, or says that no route is safe.
 - A weather heatmap along the corridor for the 48 hours after departure, with a slider and play button, and a truck marker that moves along the selected route. It can show risk, wind, rain or snow.
