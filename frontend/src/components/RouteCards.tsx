@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import type { PlanResponse } from "../api/types.ts";
 import { RouteCard } from "./RouteCard.tsx";
 
@@ -11,12 +13,21 @@ interface RouteCardsProps {
 
 /** The routes of a plan, best first, to compare and choose from. */
 export function RouteCards({ plan, selectedId, hoveredId, onSelect, onHover }: RouteCardsProps) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  // A new plan has arrived: move focus to its results, so a keyboard or screen reader user
+  // starts reading them rather than the form they have just left.
+  useEffect(() => {
+    heading.current?.focus();
+  }, [plan]);
+
   if (plan.routes.length === 0) {
     return null;
   }
   return (
     <section aria-labelledby="route-cards-heading" className="route-cards">
-      <h2 id="route-cards-heading">Routes</h2>
+      <h2 id="route-cards-heading" ref={heading} tabIndex={-1}>
+        Routes
+      </h2>
       <ol className="route-cards__list">
         {plan.routes.map((route) => (
           <RouteCard
