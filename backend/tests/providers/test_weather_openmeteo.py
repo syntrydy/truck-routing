@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import threading
 import time
 import uuid
@@ -17,6 +18,7 @@ from planner.domain.models import HourlySeries, LatLon
 from planner.infra.cache import StaleIfErrorCache
 from planner.infra.errors import UpstreamContractError, UpstreamError
 from planner.infra.http import ProviderPolicy, UpstreamClient
+from planner.infra.metrics import metrics_scope
 from planner.infra.resilience import deadline_scope
 from planner.providers.protocols import WeatherProvider, rounded_point
 from planner.providers.weather_openmeteo import OpenMeteoWeatherProvider
@@ -609,6 +611,34 @@ class TestOutages:
 
         assert result.series == dict.fromkeys(FOUR_PLACES)
         assert (result.stale, result.missing) == (False, 4)
+
+    def test_a_lost_batch_is_logged_with_the_reason_and_counted(
+        self, api: respx.MockRouter, setup: Setup, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.WARNING, logger="planner.providers.weather_openmeteo")
+        api.get(URL).respond(429, json={"error": True, "reason": "Minutely limit exceeded."})
+
+        with metrics_scope() as metrics:
+            setup.provider.hourly(FOUR_PLACES, FIRST_DAY, LAST_DAY)
+
+        (record,) = [r for r in caplog.records if r.levelno == logging.WARNING]
+        assert record.getMessage() == (
+            "weather batch lost (4 places): open-meteo: HTTP 429: Minutely limit exceeded."
+        )
+        assert metrics.weather_batches_lost == 1
+
+    def test_each_lost_batch_is_logged_once_and_without_coordinates(
+        self, api: respx.MockRouter, setup: Setup, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        caplog.set_level(logging.WARNING, logger="planner.providers.weather_openmeteo")
+        api.get(URL).respond(503)
+
+        with metrics_scope() as metrics:
+            setup.provider.hourly(grid(250), FIRST_DAY, LAST_DAY)
+
+        messages = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+        assert len(messages) == metrics.weather_batches_lost == 3
+        assert all("places" in message and "lat" not in message for message in messages)
 
     def test_a_timeout_degrades_too(self, api: respx.MockRouter, setup: Setup) -> None:
         api.get(URL).mock(side_effect=httpx.ReadTimeout("slow"))

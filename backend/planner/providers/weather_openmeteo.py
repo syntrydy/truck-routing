@@ -7,6 +7,7 @@ overlapping places only fetches what is new, and cached series keep a request al
 while when Open-Meteo is down.
 """
 
+import logging
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
@@ -17,7 +18,11 @@ from planner.domain.models import HourlySeries, LatLon
 from planner.infra.cache import StaleIfErrorCache, weather_key
 from planner.infra.errors import UpstreamTimeout, UpstreamUnavailable
 from planner.infra.http import UpstreamClient
-from planner.infra.metrics import record_cache_lookup, record_weather_points
+from planner.infra.metrics import (
+    record_cache_lookup,
+    record_weather_batch_lost,
+    record_weather_points,
+)
 from planner.infra.resilience import Deadline, current_deadline
 from planner.providers.jsonshape import JsonShape
 from planner.providers.protocols import WeatherResult, rounded_point
@@ -49,6 +54,9 @@ MAX_DAYS = 16  # the forecast horizon of the API
 SECONDS_PER_HOUR = 3_600
 
 _shape = JsonShape(NAME)
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpenMeteoWeatherProvider:
@@ -134,10 +142,13 @@ class OpenMeteoWeatherProvider:
                 for batch in batches
             ]
             results: list[list[HourlySeries] | None] = []
-            for future in futures:
+            for batch, future in zip(batches, futures, strict=True):
                 try:
                     results.append(future.result())
-                except (UpstreamUnavailable, UpstreamTimeout):
+                except (UpstreamUnavailable, UpstreamTimeout) as error:
+                    # The reason is the provider's own words, never coordinates.
+                    logger.warning("weather batch lost (%d places): %s", len(batch), error)
+                    record_weather_batch_lost()
                     results.append(None)
             return results
 

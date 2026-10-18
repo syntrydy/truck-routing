@@ -61,6 +61,7 @@ class ObservedPlanService:
             "outcome": outcome,
             "duration_ms": round(duration_s * MILLISECONDS),
             "weather_points": metrics.weather_points,
+            "weather_batches_lost": metrics.weather_batches_lost,
             "cache_hit_ratio": _ratio(metrics.cache_hit_ratio),
             "upstream": {
                 provider: {"calls": usage.calls, "ms": round(usage.seconds * MILLISECONDS)}

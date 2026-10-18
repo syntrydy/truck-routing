@@ -24,6 +24,7 @@ class RequestMetrics:
     """Counters of one request. Safe to record into from several threads."""
 
     weather_points: int = 0
+    weather_batches_lost: int = 0
     cache_hits: int = 0
     cache_misses: int = 0
     _calls: dict[str, list[float]] = field(default_factory=dict)
@@ -39,6 +40,10 @@ class RequestMetrics:
                 self.cache_hits += 1
             else:
                 self.cache_misses += 1
+
+    def record_batch_lost(self) -> None:
+        with self._lock:
+            self.weather_batches_lost += 1
 
     @property
     def cache_hit_ratio(self) -> float | None:
@@ -85,3 +90,9 @@ def record_weather_points(count: int) -> None:
     """Note how many distinct weather places the request needed."""
     if (metrics := _current.get()) is not None:
         metrics.weather_points = count
+
+
+def record_weather_batch_lost() -> None:
+    """Note a weather batch that could not be had, so its places have no weather."""
+    if (metrics := _current.get()) is not None:
+        metrics.record_batch_lost()

@@ -8,6 +8,7 @@ from planner.infra.metrics import (
     metrics_scope,
     record_cache_lookup,
     record_upstream_call,
+    record_weather_batch_lost,
     record_weather_points,
 )
 
@@ -49,6 +50,14 @@ class TestRecording:
             record_weather_points(42)
 
         assert metrics.weather_points == 42
+
+    def test_lost_weather_batches_are_counted(self) -> None:
+        record_weather_batch_lost()  # outside a scope: nothing happens
+        with metrics_scope() as metrics:
+            record_weather_batch_lost()
+            record_weather_batch_lost()
+
+        assert metrics.weather_batches_lost == 2
 
     def test_scopes_are_separate_and_nest(self) -> None:
         with metrics_scope() as outer:

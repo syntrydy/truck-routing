@@ -251,6 +251,83 @@ class TestRetries:
 
         assert route.call_count == 2
 
+    def test_a_rate_limited_retry_waits_as_long_as_the_provider_asked(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": "2"}),
+                httpx.Response(200, json=OK),
+            ]
+        )
+
+        make_client(clock).get("osrm", OSRM_URL)
+
+        assert clock.sleeps == [pytest.approx(2.0)]
+
+    def test_a_very_long_retry_after_is_capped(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(OSRM_URL).mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": "3600"}),
+                httpx.Response(200, json=OK),
+            ]
+        )
+
+        make_client(clock).get("osrm", OSRM_URL)
+
+        assert clock.sleeps == [pytest.approx(10.0)]
+
+    @pytest.mark.parametrize("value", ["Wed, 21 Oct 2026 07:28:00 GMT", "soon", "-5", "inf", "nan"])
+    def test_a_retry_after_that_is_not_a_usable_number_is_ignored(
+        self, api: respx.MockRouter, clock: FakeClock, value: str
+    ) -> None:
+        api.get(OSRM_URL).mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": value}),
+                httpx.Response(200, json=OK),
+            ]
+        )
+
+        make_client(clock).get("osrm", OSRM_URL)
+
+        assert clock.sleeps == [pytest.approx(0.3)]
+
+    def test_no_retry_is_made_when_the_wait_asked_for_is_more_than_the_budget_left(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        route = api.get(OSRM_URL).respond(429, headers={"Retry-After": "5"})
+
+        with pytest.raises(UpstreamUnavailable, match="429"):
+            make_client(clock).get("osrm", OSRM_URL, deadline=Deadline(3.0, clock))
+
+        assert route.call_count == 1
+        assert clock.sleeps == []
+
+    def test_a_rate_limit_error_carries_the_providers_reason(
+        self, api: respx.MockRouter, clock: FakeClock
+    ) -> None:
+        api.get(WEATHER_URL).respond(
+            429, json={"error": True, "reason": "Minutely API request limit exceeded."}
+        )
+
+        with pytest.raises(UpstreamUnavailable, match="429: Minutely API request limit") as raised:
+            make_client(clock).get("open-meteo", WEATHER_URL)
+
+        assert raised.value.retry_after_s is None
+
+    @pytest.mark.parametrize("body", ["<html>busy</html>", "[]", '{"reason": 7}', ""])
+    def test_a_rate_limit_body_that_is_not_a_reason_adds_nothing(
+        self, api: respx.MockRouter, clock: FakeClock, body: str
+    ) -> None:
+        api.get(WEATHER_URL).respond(429, text=body)
+
+        with pytest.raises(UpstreamUnavailable) as raised:
+            make_client(clock).get("open-meteo", WEATHER_URL)
+
+        assert str(raised.value) == "open-meteo: HTTP 429"
+
     @pytest.mark.parametrize(
         "failure",
         [
