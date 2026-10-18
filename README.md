@@ -2,6 +2,11 @@
 
 A web app that recommends the safest truck route between two places, based on the weather along the route at the estimated arrival time, the load weight and the travel time.
 
+- **App:** https://truck-routing-web.vercel.app
+- **API:** https://truck-routing-api-dw0w.onrender.com (health: `/api/health`, readiness: `/api/ready`, schema: `/api/schema/`)
+
+The API is on a free plan and sleeps when idle, so the first request after a quiet period takes up to a minute.
+
 ## Features
 
 - Plan a trip from one place to another with a departure time, a load weight and a checkpoint spacing (10, 25 or 50 miles).
@@ -139,6 +144,12 @@ The API runs on [Render](https://render.com) (free web service) and the web app 
 2. **Web app.** In Vercel import the repository and set the root directory to `frontend`. Add `VITE_API_BASE_URL` = the API's origin (`https://truck-routing-api-dw0w.onrender.com`) and deploy. The Content Security Policy in `frontend/vercel.json` names the API origin; change it there if the host name differs.
 3. **Connect them.** Set `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` on the API to the exact Vercel origin (no trailing slash) and let it redeploy.
 4. **Check.** `GET <api>/api/ready` returns 200, and a trip planned on the web app draws routes and the forecast.
+
+Things worth knowing, learned from the first deploy:
+
+- Vercel must build from `frontend`. Setting the root directory when importing the project is not enough if the GitHub integration builds first; check Project Settings, General, Root Directory.
+- Render appends a random suffix to the service's host name. Read the real name from the dashboard before setting `ALLOWED_HOSTS` and the CSP.
+- The free Open-Meteo API limits each outbound address to 10,000 calls a day, and a free Render instance shares its address with other apps. When the limit is hit the API answers 200 with a banner "Weather is unavailable" and every route shown as Unknown (never as Low), and the log says `weather batch lost ... Daily API request limit exceeded`. The limit resets at midnight UTC; for steady use, get an Open-Meteo plan or move the API to a host with its own address.
 
 The free API service sleeps after a quiet period; the app pings `/api/health` on load and says so while the server wakes up (about a minute).
 
