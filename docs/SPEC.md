@@ -294,6 +294,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 - Layout: full-screen map; left panel (form + route cards); bottom forecast slider. Mobile: panel becomes bottom sheet.
 - Map: MapLibre, created once. Layers: routes (recommended thick, on top), checkpoints (one GeoJSON source, data-driven color), heatmap, truck marker at slider hour on the selected route.
 - Heatmap: MapLibre `heatmap` layer, weight = level/4, ramp green → yellow → orange → red → purple, unknown = grey; fades to circles above zoom 9. 49 FeatureCollections built once with `useMemo`; slider calls `setData`, throttled with `requestAnimationFrame`. Play button steps 1 h / 400 ms. Toggle: risk / wind / rain / snow. Label shows absolute local time and offset.
+- Planned trip: once a plan arrives the form folds (hidden, so nothing typed is lost) into a one-line summary ("Denver → Salt Lake City · Sun 8:33 PM · 42,000 lb · every 25 mi") with an Edit trip button, so the route cards fit on screen; Edit opens the form with focus in its first field, and a failed plan keeps it open.
 - Route cards: rank badge, duration, distance, stacked bar of miles by level, reason on the winner; hover highlights route; click selects.
 - Checkpoint popup: ETA (local, with tz), wind, gust, rain, snow, level, reasons.
 - Demo: a "Try the stormy demo" button sets the form to the recorded trip (keeping the load and the spacing) and calls `/api/demo`; a plan whose weather source is `demo` carries a banner that it is a recording, not a live forecast. Try again repeats the demo.
