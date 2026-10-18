@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { formatFrameTime, formatHoursAhead, frameTime } from "./forecastTime.ts";
 
@@ -17,6 +17,30 @@ describe("formatFrameTime", () => {
 
   it("follows daylight saving", () => {
     expect(formatFrameTime(new Date("2026-11-02T18:00:00Z"))).toBe("Mon, 12:00 PM CST (UTC-06:00)");
+  });
+});
+
+describe("formatFrameTime in a zone with no abbreviation", () => {
+  const original = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = original;
+  });
+  const moment = new Date("2026-10-18T19:00:00Z");
+
+  it.each([
+    ["Africa/Douala", "Sun, 8:00 PM UTC+01:00"],
+    ["America/Sao_Paulo", "Sun, 4:00 PM UTC-03:00"],
+    ["Asia/Kolkata", "Mon, 12:30 AM UTC+05:30"],
+  ])("says %s once, as an offset", (zone, expected) => {
+    process.env.TZ = zone;
+
+    expect(formatFrameTime(moment)).toBe(expected);
+  });
+
+  it("writes UTC itself once too", () => {
+    process.env.TZ = "UTC";
+
+    expect(formatFrameTime(moment)).toBe("Sun, 7:00 PM UTC+00:00");
   });
 });
 

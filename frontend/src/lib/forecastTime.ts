@@ -7,15 +7,27 @@ export function frameTime(startIso: string, hour: number): Date {
   return new Date(new Date(startIso).getTime() + hour * HOUR_MS);
 }
 
-/** The reader's local time with its zone and UTC offset, e.g. `Sun, 6:00 PM CDT (UTC-05:00)`. */
+/** A short zone name that is only an offset (`GMT+1`, `UTC-3`) or none at all (`UTC`, `GMT`). */
+const OFFSET_ONLY_ZONE = /^(GMT|UTC)([+\-\u2212].*)?$/;
+
+/**
+ * The reader's local time with its zone, e.g. `Sun, 6:00 PM CDT (UTC-05:00)`. A zone with no
+ * abbreviation is named by its offset alone (`Tue, 8:00 PM UTC+01:00`), not twice.
+ */
 export function formatFrameTime(moment: Date): string {
-  const text = new Intl.DateTimeFormat("en-US", {
+  const format = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
-  }).format(moment);
-  return `${text} (UTC${toOffsetIso(moment).slice(-6)})`;
+  });
+  const zone = format.formatToParts(moment).find((part) => part.type === "timeZoneName")?.value;
+  const offset = `UTC${toOffsetIso(moment).slice(-6)}`;
+  const text = format.format(moment);
+  if (zone === undefined) {
+    return text; // not reached: the format always asks for a zone name
+  }
+  return text.replace(zone, OFFSET_ONLY_ZONE.test(zone) ? offset : `${zone} (${offset})`);
 }
 
 /** How far the frame is from departure, e.g. `now`, `+3 h`. */
