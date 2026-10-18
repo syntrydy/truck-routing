@@ -74,6 +74,7 @@ class ProviderPolicy:
 
 ROUTING_TIMEOUT_S = 8.0
 WEATHER_TIMEOUT_S = 10.0
+NWS_TIMEOUT_S = 8.0
 GEOCODE_TIMEOUT_S = 4.0
 # The public OSRM server allows about one request per second; keep a margin.
 OSRM_MIN_SPACING_S = 1.1
@@ -98,6 +99,7 @@ def default_policies() -> list[ProviderPolicy]:
         ProviderPolicy("osrm", ROUTING_TIMEOUT_S, max_concurrency=1),
         ProviderPolicy("openrouteservice", ROUTING_TIMEOUT_S, max_concurrency=1),
         ProviderPolicy("open-meteo", WEATHER_TIMEOUT_S, max_concurrency=4),
+        ProviderPolicy("nws", NWS_TIMEOUT_S, max_concurrency=16),
         ProviderPolicy("photon", GEOCODE_TIMEOUT_S, max_concurrency=2),
         ProviderPolicy("nominatim", GEOCODE_TIMEOUT_S, max_concurrency=2),
     ]

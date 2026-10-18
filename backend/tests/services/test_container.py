@@ -11,6 +11,8 @@ from planner.infra.http import ProviderPolicy, UpstreamClient
 from planner.providers.geocode_chain import CachedGeocoder
 from planner.providers.routing_chain import FallbackRoutingProvider
 from planner.providers.routing_osrm import OsrmRoutingProvider
+from planner.providers.weather_chain import FallbackWeatherProvider
+from planner.providers.weather_nws import NwsWeatherProvider
 from planner.providers.weather_openmeteo import OpenMeteoWeatherProvider
 from planner.services.container import (
     Container,
@@ -64,10 +66,14 @@ class TestBuildContainer:
 
         assert isinstance(service._routing, FallbackRoutingProvider)  # noqa: SLF001
 
-    def test_weather_comes_from_open_meteo(self, client: UpstreamClient) -> None:
-        service = build(client).plan_service.service
+    def test_weather_comes_from_open_meteo_with_the_nws_behind_it(
+        self, client: UpstreamClient
+    ) -> None:
+        weather = build(client).plan_service.service._weather  # noqa: SLF001
 
-        assert isinstance(service._weather, OpenMeteoWeatherProvider)  # noqa: SLF001
+        assert isinstance(weather, FallbackWeatherProvider)
+        assert isinstance(weather._primary, OpenMeteoWeatherProvider)  # noqa: SLF001
+        assert isinstance(weather._secondary, NwsWeatherProvider)  # noqa: SLF001
 
     def test_the_plan_service_gets_the_speed_and_the_wind_basis(
         self, client: UpstreamClient
@@ -85,7 +91,9 @@ class TestBuildContainer:
         container = build(client, cache_backend=backend)
 
         assert container.cache._backend is backend  # noqa: SLF001
-        assert container.plan_service.service._weather._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
+        weather = container.plan_service.service._weather  # noqa: SLF001
+        assert weather._primary._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
+        assert weather._secondary._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
         assert container.geocoder._cache is container.cache  # type: ignore[attr-defined]  # noqa: SLF001
 
 

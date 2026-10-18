@@ -41,6 +41,7 @@ UPSTREAM_ALLOWED_HOSTS = env.list(
         "router.project-osrm.org",
         "api.openrouteservice.org",
         "api.open-meteo.com",
+        "api.weather.gov",
         "photon.komoot.io",
         "nominatim.openstreetmap.org",
     ],
