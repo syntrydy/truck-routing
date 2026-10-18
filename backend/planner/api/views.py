@@ -23,7 +23,12 @@ from planner.api.serializers import (
     parse_plan_request,
 )
 from planner.infra.resilience import BreakerState
-from planner.providers.protocols import MAX_QUERY_LENGTH, MIN_QUERY_LENGTH, normalize_query
+from planner.providers.protocols import (
+    MAX_QUERY_LENGTH,
+    MIN_QUERY_LENGTH,
+    QUERY_LENGTH_MESSAGE,
+    normalize_query,
+)
 from planner.services.container import get_container
 
 
@@ -142,7 +147,7 @@ class GeocodeView(APIView):
         try:
             query = normalize_query(request.query_params.get("q", ""))
         except ValueError as error:
-            raise ValidationError({"q": [str(error)]}) from error
+            raise ValidationError({"q": [QUERY_LENGTH_MESSAGE]}) from error
         places = get_container().geocoder.search(query)
         return Response(
             {
