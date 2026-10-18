@@ -181,6 +181,30 @@ def sample_along(points: Sequence[LatLon], spacing_m: float) -> list[LatLon]:
     return samples
 
 
+STRAIGHTNESS_SPACING_M = 2_000.0
+
+
+def min_straightness(
+    points: Sequence[LatLon], window_m: float, spacing_m: float = STRAIGHTNESS_SPACING_M
+) -> float:
+    """How closely the route keeps going one way: the lowest ratio, over the route, of the
+    straight-line distance between two points ``window_m`` of road apart to ``window_m``.
+
+    1.0 is a straight road and 0.0 is a road that comes back to where it was. A spur (out and
+    back) or a dogleg that leaves the road and rejoins it lowers it; the bends of a normal road
+    do not. A route shorter than twice the window is judged over half of its length.
+    """
+    samples = sample_along(points, spacing_m)
+    window_m = min(window_m, spacing_m * (len(samples) - 1) / 2)
+    steps = max(1, round(window_m / spacing_m))
+    if len(samples) <= steps:
+        return 1.0
+    return min(
+        haversine_m(samples[index], samples[index + steps]) / (steps * spacing_m)
+        for index in range(len(samples) - steps)
+    )
+
+
 class ProximityIndex:
     """Answers "is this point within ``radius_m`` of the polylines?" in near-constant time.
 

@@ -13,6 +13,7 @@ from planner.domain.geometry import (
     destination_point,
     distance_to_polyline_m,
     haversine_m,
+    min_straightness,
     perpendicular_offset,
     point_at_distance,
     sample_along,
@@ -466,3 +467,49 @@ class TestProximityIndex:
     def test_rejects_an_empty_set_of_polylines(self) -> None:
         with pytest.raises(ValueError, match="no polylines"):
             ProximityIndex([], 1_000.0, 100.0)
+
+
+class TestMinStraightness:
+    """How closely a route keeps going one way, over a stretch of road."""
+
+    ORIGIN = LatLon(41.0, -100.0)
+    WINDOW_M = 100_000.0
+
+    def spur(self, leg_km: float) -> list[LatLon]:
+        """100 km east, a spur north and back along the same road, then 100 km further east."""
+        turn = destination_point(self.ORIGIN, 90.0, 100_000.0)
+        tip = destination_point(turn, 0.0, leg_km * 1_000.0)
+        end = destination_point(turn, 90.0, 100_000.0)
+        return [self.ORIGIN, turn, tip, turn, end]
+
+    def test_a_straight_road_is_about_1(self) -> None:
+        end = destination_point(self.ORIGIN, 90.0, 300_000.0)
+
+        assert min_straightness([self.ORIGIN, end], self.WINDOW_M) == pytest.approx(1.0, abs=0.03)
+
+    def test_a_spur_lowers_it_by_the_road_it_wastes(self) -> None:
+        # The worst 100 km holds the whole spur: 2 * 25 km out and back, and 50 km of progress.
+        assert min_straightness(self.spur(25.0), self.WINDOW_M) == pytest.approx(0.5, abs=0.03)
+
+    def test_a_short_spur_barely_does(self) -> None:
+        assert min_straightness(self.spur(4.0), self.WINDOW_M) == pytest.approx(0.92, abs=0.03)
+
+    def test_a_dogleg_that_rejoins_the_road_is_a_low_value(self) -> None:
+        # North 50 km, west 40 km, south 50 km back onto the road, as a detour through a point
+        # beside no road does.
+        a = destination_point(self.ORIGIN, 90.0, 100_000.0)
+        b = destination_point(a, 0.0, 50_000.0)
+        c = destination_point(b, 90.0, 40_000.0)
+        d = destination_point(c, 180.0, 50_000.0)
+        e = destination_point(d, 90.0, 100_000.0)
+
+        assert min_straightness([self.ORIGIN, a, b, c, d, e], self.WINDOW_M) < 0.6
+
+    def test_a_route_shorter_than_the_window_is_judged_over_half_of_itself(self) -> None:
+        turn = destination_point(self.ORIGIN, 90.0, 20_000.0)
+        tip = destination_point(turn, 0.0, 20_000.0)
+
+        assert min_straightness([self.ORIGIN, turn, tip, turn], self.WINDOW_M) < 0.5
+
+    def test_a_route_of_one_point_is_not_judged(self) -> None:
+        assert min_straightness([self.ORIGIN, self.ORIGIN], self.WINDOW_M) == 1.0
