@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 
 import type { PlanRequest } from "./api/types.ts";
 import { useWarmUp } from "./api/useWarmUp.ts";
@@ -8,6 +8,7 @@ import { PlanStatus } from "./components/PlanStatus.tsx";
 import { ServerStatus } from "./components/ServerStatus.tsx";
 import { RouteCards } from "./components/RouteCards.tsx";
 import { TripForm } from "./components/TripForm.tsx";
+import { TripSummary } from "./components/TripSummary.tsx";
 import { ForecastSlider } from "./components/ForecastSlider.tsx";
 import { useForecast } from "./hooks/useForecast.ts";
 import { usePlan, type PlanCall } from "./hooks/usePlan.ts";
@@ -23,6 +24,10 @@ export function App() {
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(true);
+  // Once a trip is planned the form folds into a summary, so that the routes fit on screen.
+  const [formOpen, setFormOpen] = useState(true);
+  const formId = useId();
+  const formRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   const forecast = useForecast(plan.data ?? null);
@@ -44,6 +49,7 @@ export function App() {
       mutate(call, {
         onSuccess: () => {
           setSheetOpen(false);
+          setFormOpen(false);
           // The results heading takes focus when it is on screen; on a phone it is folded away
           // with the sheet, so focus goes to the sheet's bar instead of being lost.
           // The browser only drops focus from a hidden element once it has laid the page out, so
@@ -56,6 +62,7 @@ export function App() {
         },
         onError: () => {
           setSheetOpen(true);
+          setFormOpen(true);
         },
       });
     },
@@ -73,6 +80,12 @@ export function App() {
     },
     [run],
   );
+  const editTrip = useCallback(() => {
+    setFormOpen(true);
+    requestAnimationFrame(() => {
+      formRef.current?.querySelector<HTMLElement>("input")?.focus();
+    });
+  }, []);
   const retry = useCallback(() => {
     if (lastCall !== null) {
       run(lastCall);
@@ -95,7 +108,12 @@ export function App() {
         <>
           <p>Pick a route, check the weather along it, and drive the safest one.</p>
           <ServerStatus waking={warmUp.isPending} failed={warmUp.isError} />
-          <TripForm planned={planned} onSubmit={planTrip} onDemo={planDemo} />
+          {planned !== null && !formOpen && (
+            <TripSummary request={planned} formId={formId} onEdit={editTrip} />
+          )}
+          <div id={formId} ref={formRef} hidden={planned !== null && !formOpen}>
+            <TripForm planned={planned} onSubmit={planTrip} onDemo={planDemo} />
+          </div>
           <PlanStatus
             pending={plan.isPending}
             error={plan.error}

@@ -328,9 +328,57 @@ describe("states", () => {
     expect(demo).toHaveBeenCalledTimes(1);
     expect(demo.mock.calls[0]?.[0]).toMatchObject({ load_lb: 42_000, interval_mi: 25 });
     expect(plan).not.toHaveBeenCalled();
-    expect(screen.getByRole("combobox", { name: "To" })).toHaveValue(
-      "Salt Lake City, Utah, United States",
+    expect(screen.getByText(/^Denver → Salt Lake City · /)).toBeInTheDocument();
+  });
+
+  it("folds the form into a one-line summary when the plan arrives, and Edit opens it again", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    expect(screen.getByRole("combobox", { name: "From" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    await screen.findByRole("button", { name: "Route R1" });
+    expect(screen.getByText(/^Chicago → Denver · .* · 42,000 lb · every 25 mi$/)).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "From" })).not.toBeInTheDocument();
+    const edit = screen.getByRole("button", { name: "Edit trip" });
+    expect(edit).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(edit);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: "From" })).toHaveFocus();
+    });
+    expect(screen.getByRole("combobox", { name: "From" })).toHaveValue(CHICAGO.label);
+    expect(screen.getByLabelText("Load (lb)")).toHaveValue("42000");
+    expect(screen.queryByRole("button", { name: "Edit trip" })).not.toBeInTheDocument();
+  });
+
+  it("folds the form again after a re-plan from the open form", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+    await user.click(await screen.findByRole("button", { name: "Edit trip" }));
+
+    await user.click(screen.getByRole("button", { name: "Re-plan" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Edit trip" })).toBeVisible();
+    });
+    expect(plan).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the form open when the plan fails", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() =>
+      Promise.reject(new ApiError({ code: "NO_ROUTE", message: "x", status: 422 })),
     );
+    const { user } = renderApp({ plan });
+
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    await screen.findByRole("alert");
+    expect(screen.getByRole("combobox", { name: "From" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Edit trip" })).not.toBeInTheDocument();
   });
 
   it("tries the demo again, not a live plan, after the demo failed", async () => {
