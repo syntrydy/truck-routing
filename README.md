@@ -62,8 +62,8 @@ _To be filled in._
 
 The API runs on [Render](https://render.com) (free web service) and the web app on [Vercel](https://vercel.com). Both are configured in the repository: `render.yaml` and `frontend/vercel.json`.
 
-1. **API.** In Render choose New, Blueprint and pick this repository. Render creates `truck-routing-api` from `render.yaml`, generates `SECRET_KEY` and asks for the values marked `sync: false`. Leave `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` for step 3; add `ORS_API_KEY` if you have one. If Render gives the service a different host name than `truck-routing-api.onrender.com`, set `ALLOWED_HOSTS` to it.
-2. **Web app.** In Vercel import the repository and set the root directory to `frontend`. Add `VITE_API_BASE_URL` = the API's origin (`https://truck-routing-api.onrender.com`) and deploy. The Content Security Policy in `frontend/vercel.json` names the API origin; change it there if the host name differs.
+1. **API.** In Render choose New, Blueprint and pick this repository. Render creates `truck-routing-api` from `render.yaml`, generates `SECRET_KEY` and asks for the values marked `sync: false`. Leave `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` for step 3; add `ORS_API_KEY` if you have one. If your service gets a different host name than `truck-routing-api-dw0w.onrender.com`, set `ALLOWED_HOSTS` to it.
+2. **Web app.** In Vercel import the repository and set the root directory to `frontend`. Add `VITE_API_BASE_URL` = the API's origin (`https://truck-routing-api-dw0w.onrender.com`) and deploy. The Content Security Policy in `frontend/vercel.json` names the API origin; change it there if the host name differs.
 3. **Connect them.** Set `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS` on the API to the exact Vercel origin (no trailing slash) and let it redeploy.
 4. **Check.** `GET <api>/api/ready` returns 200, and a trip planned on the web app draws routes and the forecast.
 
