@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plan the stormy demo trip
+         * @description Denver to Salt Lake City by three roads, in a recording of the wind storm of 17 January 2024 on I-80 in Wyoming, moved in time to start at the request. It is planned by the same service as `plan`; only the routes and the weather are recorded, and `meta.routing_source` and `meta.weather_source` are `demo`. It needs no other service, so it works when the live ones do not.
+         */
+        get: operations["demo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/geocode": {
         parameters: {
             query?: never;
@@ -282,6 +302,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    demo: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Miles.
+                 *
+                 *     * `10` - 10
+                 *     * `25` - 25
+                 *     * `50` - 50
+                 */
+                interval_mi?: 10 | 25 | 50;
+                /** @description Pounds. */
+                load_lb?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanResponse"];
+                };
+            };
+            /** @description `VALIDATION`: `load_lb` or `interval_mi` is not allowed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description `RATE_LIMITED`. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     geocode: {
         parameters: {
             query: {

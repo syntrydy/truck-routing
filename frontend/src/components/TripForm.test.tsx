@@ -33,9 +33,11 @@ const geocode = vi.fn<ApiClient["geocode"]>(defaultGeocode);
 function Page({
   initial = null,
   onSubmit,
+  onDemo = vi.fn(),
 }: {
   initial?: PlanRequest | null;
   onSubmit: (request: PlanRequest) => void;
+  onDemo?: (request: PlanRequest) => void;
 }) {
   const [planned, setPlanned] = useState(initial);
   return (
@@ -46,17 +48,22 @@ function Page({
         setPlanned(request);
         onSubmit(request);
       }}
+      onDemo={(request) => {
+        setPlanned(request);
+        onDemo(request);
+      }}
     />
   );
 }
 
 function setup(initial: PlanRequest | null = null) {
   const onSubmit = vi.fn();
+  const onDemo = vi.fn();
   const user = userEvent.setup({ delay: null });
-  const view = render(<Page initial={initial} onSubmit={onSubmit} />, {
+  const view = render(<Page initial={initial} onSubmit={onSubmit} onDemo={onDemo} />, {
     wrapper: apiWrapper(stubClient({ geocode })),
   });
-  return { user, onSubmit, ...view };
+  return { user, onSubmit, onDemo, ...view };
 }
 
 type User = ReturnType<typeof userEvent.setup>;
@@ -308,5 +315,54 @@ describe("accessibility", () => {
     await user.click(submitButton());
     expect(screen.getByText(/Choose a starting place/)).toBeInTheDocument();
     await expectNoA11yViolations(container);
+  });
+});
+
+describe("the stormy demo", () => {
+  const demoButton = () => screen.getByRole("button", { name: "Try the stormy demo" });
+
+  it("says what it is and that it is not live", () => {
+    setup();
+
+    expect(demoButton()).toHaveAccessibleDescription(/recording of a real wind storm/);
+    expect(demoButton()).toHaveAccessibleDescription(/Not a live forecast/);
+  });
+
+  it("sets the form to the demo trip, leaving now, and keeps the load and the spacing", async () => {
+    const { user, onDemo, onSubmit } = setup();
+    const load = screen.getByLabelText("Load (lb)");
+    await user.clear(load);
+    await user.type(load, "36000");
+    await user.click(screen.getByRole("radio", { name: "50 mi" }));
+
+    await user.click(demoButton());
+
+    expect(screen.getByRole("combobox", { name: "From" })).toHaveValue(DENVER.label);
+    expect(screen.getByRole("combobox", { name: "To" })).toHaveValue(
+      "Salt Lake City, Utah, United States",
+    );
+    expect(screen.getByLabelText("Departure")).toHaveValue("2026-10-18T13:20");
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onDemo).toHaveBeenCalledTimes(1);
+    expect(onDemo.mock.calls[0]?.[0]).toMatchObject({
+      origin: { label: DENVER.label },
+      destination: { label: "Salt Lake City, Utah, United States" },
+      load_lb: 36_000,
+      interval_mi: 50,
+    });
+  });
+
+  it("does not start with a load that is not a number, and shows why", async () => {
+    const { user, onDemo } = setup();
+    const load = screen.getByLabelText("Load (lb)");
+    await user.clear(load);
+    await user.type(load, "heavy");
+
+    await user.click(demoButton());
+    await pass(20);
+
+    expect(onDemo).not.toHaveBeenCalled();
+    expect(load).toBeInvalid();
+    expect(load).toHaveFocus();
   });
 });

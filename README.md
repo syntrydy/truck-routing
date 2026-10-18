@@ -13,6 +13,7 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 
 - [Features](#features)
 - [Walkthrough](#walkthrough)
+- [Stormy demo](#stormy-demo)
 - [Architecture](#architecture)
 - [How a plan is made](#how-a-plan-is-made)
 - [Getting started](#getting-started)
@@ -28,6 +29,7 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 
 ## Features
 
+- A stormy demo for when the weather is calm: Denver to Salt Lake City in a recording of a real wind storm on I-80 in Wyoming, planned by the same code as a live trip, clearly labeled as a recording.
 - Plan a trip from one place to another with a departure time, a load weight and a checkpoint spacing (10, 25 or 50 miles).
 - Up to three distinct routes, each with checkpoints that show the estimated arrival time and the weather expected at that moment: wind, gusts, rain and snow.
 - Every checkpoint has a risk level (Low, Moderate, High, Severe, No Travel, or Unknown) and the reasons for it, such as "Wind 47 mph with 42,000 lb load".
@@ -38,11 +40,20 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 
 ## Walkthrough
 
+![The stormy demo: the fastest road, I-80 through Wyoming, is Severe and No Travel at Laramie and Fort Collins, and the recommended route goes around it](docs/images/stormy-demo.png)
+
+0. **See it at work first.** On a calm day every route is Low. Press **Try the stormy demo** to plan Denver to Salt Lake City inside a recording of the wind storm of 17 January 2024 on I-80 in Wyoming (see [Stormy demo](#stormy-demo)). The fastest road meets No Travel wind, the other two go around it, and a banner says it is a recording.
 1. **Choose the trip.** Pick two places with the search boxes (they start as Chicago and Denver), then set the departure time, the load in pounds and the checkpoint spacing. Press **Plan trip**.
 2. **Read the routes.** Each card shows the duration, distance, the worst risk level and a bar of how many miles fall in each level. The recommended route is marked, with the reason it won. Banners above the cards list assumptions and gaps, such as fewer than three routes or missing weather.
 3. **Open a checkpoint.** Click a dot on the map to see the arrival time, the weather expected at that moment and the reasons for its risk level, for example "Wind 47 mph with 42,000 lb load".
 4. **Move through time.** Drag the forecast slider, or press **Play**, to watch the heatmap and the truck marker change over the 48 hours after departure. Switch the map between **Risk**, **Wind**, **Rain** and **Snow**. With the keyboard, focus the slider and use the arrow keys.
 5. **Compare.** Select another route card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
+
+## Stormy demo
+
+`GET /api/demo` (the "Try the stormy demo" button) plans Denver to Salt Lake City by three roads in a recording of a real winter storm. It is planned by the same service as a live trip, so the risk bands, the load rules and the ranking are the real ones; only the routes and the weather come from recordings. The storm is moved in time to start when you press the button, and a banner says it is a recording and not a live forecast. It needs no other service, so it works when the live ones are down or out of quota.
+
+With a 42,000 lb load the fastest road (I-80 through Wyoming) has 100 miles of No Travel and 50 of Severe wind near Laramie, and the recommended route goes around it. Try a lighter load and the same storm is less severe. The recordings (OSRM routes and the Open-Meteo historical forecast of 17 January 2024) and the script that made them are in `backend/fixtures/demo` and `backend/scripts/record_demo.py`; the decision is in [ADR 5](docs/adr/0005-recorded-storm-demo.md).
 
 ## Architecture
 
@@ -98,12 +109,13 @@ Open http://localhost:5173, choose two places, and press Plan trip. To run witho
 
 The API is described by an OpenAPI schema at `/api/schema/` (checked in at `backend/openapi/schema.json`; the frontend types are generated from it).
 
-| Method | Path              | Purpose                                                        |
-| ------ | ----------------- | -------------------------------------------------------------- |
-| GET    | `/api/health`     | Liveness, with no calls to other services                      |
-| GET    | `/api/ready`      | Readiness: cache reachable, circuit breaker state per provider |
-| GET    | `/api/geocode?q=` | Up to 8 places for a text of 3 to 100 characters               |
-| POST   | `/api/plan`       | Routes, checkpoints, ranking and the heatmap for a trip        |
+| Method | Path              | Purpose                                                         |
+| ------ | ----------------- | --------------------------------------------------------------- |
+| GET    | `/api/health`     | Liveness, with no calls to other services                       |
+| GET    | `/api/ready`      | Readiness: cache reachable, circuit breaker state per provider  |
+| GET    | `/api/geocode?q=` | Up to 8 places for a text of 3 to 100 characters                |
+| POST   | `/api/plan`       | Routes, checkpoints, ranking and the heatmap for a trip         |
+| GET    | `/api/demo`       | The same, for the recorded storm trip; `load_lb`, `interval_mi` |
 
 Errors share one shape, `{"error": {"code", "message", "field", "request_id"}}`, with the codes `VALIDATION`, `TOO_CLOSE`, `NO_ROUTE`, `RATE_LIMITED`, `UPSTREAM_ERROR`, `UPSTREAM_UNAVAILABLE`, `UPSTREAM_TIMEOUT`, `NOT_FOUND` and `INTERNAL_ERROR`. Missing weather is not an error: the plan comes back with Unknown levels and a banner. Limits are 10 plans and 60 searches per minute per client.
 
@@ -154,7 +166,7 @@ make fe-e2e                         # the browser test (first: cd frontend && np
 
 - **Backend:** pytest with a coverage gate in CI (the whole backend at least 85%; the pure domain is at 100% and the backend overall at 99%). Boundary values of every band are tested on both sides, with property tests for ordering; providers are tested against recorded responses and never touch the network.
 - **Frontend:** Vitest and Testing Library for components, hooks and map code (MapLibre is replaced by a fake), and axe-core for accessibility.
-- **End to end:** one Playwright test plans a trip against the real API running on recorded responses, opens a checkpoint on the map and moves the forecast.
+- **End to end:** two Playwright tests run against the real API on recorded responses. One plans a trip, opens a checkpoint on the map and moves the forecast; the other runs the stormy demo and checks the danger, the recommendation and the banner.
 
 ## Security scanning
 

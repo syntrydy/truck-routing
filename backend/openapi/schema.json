@@ -6,6 +6,75 @@
         "description": "Safest-route planning for trucks based on weather along the route."
     },
     "paths": {
+        "/api/demo": {
+            "get": {
+                "operationId": "demo",
+                "description": "Denver to Salt Lake City by three roads, in a recording of the wind storm of 17 January 2024 on I-80 in Wyoming, moved in time to start at the request. It is planned by the same service as `plan`; only the routes and the weather are recorded, and `meta.routing_source` and `meta.weather_source` are `demo`. It needs no other service, so it works when the live ones do not.",
+                "summary": "Plan the stormy demo trip",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "interval_mi",
+                        "schema": {
+                            "enum": [
+                                10,
+                                25,
+                                50
+                            ],
+                            "type": "integer",
+                            "default": 25
+                        },
+                        "description": "Miles.\n\n* `10` - 10\n* `25` - 25\n* `50` - 50"
+                    },
+                    {
+                        "in": "query",
+                        "name": "load_lb",
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 200000,
+                            "minimum": 0,
+                            "default": 42000
+                        },
+                        "description": "Pounds."
+                    }
+                ],
+                "tags": [
+                    "demo"
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlanResponse"
+                                }
+                            }
+                        },
+                        "description": ""
+                    },
+                    "400": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`VALIDATION`: `load_lb` or `interval_mi` is not allowed."
+                    },
+                    "429": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorEnvelope"
+                                }
+                            }
+                        },
+                        "description": "`RATE_LIMITED`."
+                    }
+                }
+            }
+        },
         "/api/geocode": {
             "get": {
                 "operationId": "geocode",

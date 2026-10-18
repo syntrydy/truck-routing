@@ -24,6 +24,15 @@ export const DEFAULT_DESTINATION: Place = {
   kind: "city",
 };
 
+/** The recorded trip of the stormy demo (the API's `/api/demo`). */
+export const DEMO_ORIGIN: Place = DEFAULT_DESTINATION;
+export const DEMO_DESTINATION: Place = {
+  label: "Salt Lake City, Utah, United States",
+  lat: 40.7608,
+  lon: -111.891,
+  kind: "city",
+};
+
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 export const PAST_GRACE_MS = 15 * MINUTE_MS;
@@ -66,6 +75,16 @@ export function defaultTripValues(now: Date): TripValues {
     departure: formatLocalInput(nextHour),
     load: String(DEFAULT_LOAD_LB),
     interval: DEFAULT_INTERVAL_MI,
+  };
+}
+
+/** `values` set to the demo trip, leaving now, with the load and the spacing kept. */
+export function withDemoTrip(values: TripValues, now: Date): TripValues {
+  return {
+    ...values,
+    origin: DEMO_ORIGIN,
+    destination: DEMO_DESTINATION,
+    departure: formatLocalInput(now),
   };
 }
 

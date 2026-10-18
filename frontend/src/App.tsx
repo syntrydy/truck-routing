@@ -10,7 +10,7 @@ import { RouteCards } from "./components/RouteCards.tsx";
 import { TripForm } from "./components/TripForm.tsx";
 import { ForecastSlider } from "./components/ForecastSlider.tsx";
 import { useForecast } from "./hooks/useForecast.ts";
-import { usePlan } from "./hooks/usePlan.ts";
+import { usePlan, type PlanCall } from "./hooks/usePlan.ts";
 import { focusIfLost } from "./lib/focus.ts";
 import { formatDuration } from "./lib/format.ts";
 import { MapView } from "./map/MapView.tsx";
@@ -18,7 +18,8 @@ import { MapView } from "./map/MapView.tsx";
 export function App() {
   const warmUp = useWarmUp();
   const plan = usePlan();
-  const [planned, setPlanned] = useState<PlanRequest | null>(null);
+  const [lastCall, setLastCall] = useState<PlanCall | null>(null);
+  const planned = lastCall?.request ?? null;
   const [chosenId, setChosenId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(true);
@@ -35,12 +36,12 @@ export function App() {
   // are left alone while only the hour changes.
   const selection = useMemo(() => ({ selectedId, hoveredId }), [selectedId, hoveredId]);
   const { mutate } = plan;
-  const planTrip = useCallback(
-    (request: PlanRequest) => {
-      setPlanned(request);
+  const run = useCallback(
+    (call: PlanCall) => {
+      setLastCall(call);
       setChosenId(null);
       // On a phone, fold the sheet away to show the map when the plan arrives; open it for an error.
-      mutate(request, {
+      mutate(call, {
         onSuccess: () => {
           setSheetOpen(false);
           // The results heading takes focus when it is on screen; on a phone it is folded away
@@ -60,11 +61,23 @@ export function App() {
     },
     [mutate],
   );
+  const planTrip = useCallback(
+    (request: PlanRequest) => {
+      run({ kind: "trip", request });
+    },
+    [run],
+  );
+  const planDemo = useCallback(
+    (request: PlanRequest) => {
+      run({ kind: "demo", request });
+    },
+    [run],
+  );
   const retry = useCallback(() => {
-    if (planned !== null) {
-      planTrip(planned);
+    if (lastCall !== null) {
+      run(lastCall);
     }
-  }, [planned, planTrip]);
+  }, [lastCall, run]);
   const data = plan.data;
   const best = data?.routes.find((route) => route.id === data.recommended_route_id);
   const summary =
@@ -82,7 +95,7 @@ export function App() {
         <>
           <p>Pick a route, check the weather along it, and drive the safest one.</p>
           <ServerStatus waking={warmUp.isPending} failed={warmUp.isError} />
-          <TripForm planned={planned} onSubmit={planTrip} />
+          <TripForm planned={planned} onSubmit={planTrip} onDemo={planDemo} />
           <PlanStatus
             pending={plan.isPending}
             error={plan.error}
