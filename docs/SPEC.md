@@ -181,6 +181,7 @@ OpenAPI schema at `/api/schema/`; frontend types generated from it.
 | GET    | `/api/ready`      | Readiness: breaker state per provider, cache reachable |
 | GET    | `/api/geocode?q=` | ≥ 3 chars, ≤ 100 chars, cached 24 h, max 8 results     |
 | POST   | `/api/plan`       | See below                                              |
+| GET    | `/api/demo`       | The recorded storm demo (section 5.1)                  |
 
 Request:
 
@@ -270,6 +271,10 @@ Errors (single shape): `{"error": {"code": "NO_ROUTE", "message": "…", "field"
 
 Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner `WEATHER_UNAVAILABLE`. The banner is for a checkpoint without weather; heatmap cells off the routes without weather only add a note and are drawn grey.
 
+### 5.1 Stormy demo
+
+`GET /api/demo?load_lb=&interval_mi=` (defaults 42,000 and 25) returns the same response as `/api/plan` for a fixed trip, Denver to Salt Lake City by three recorded roads, in a recording of the wind storm of 17 January 2024 on I-80 in Wyoming. It runs the real `PlanService` with a routing provider and a weather provider that replay `backend/fixtures/demo`, moved in time so the storm starts at the request. `meta.routing_source` and `meta.weather_source` are `demo`, and the web app shows a banner that this is a recording. It uses no upstream service. See [ADR 5](adr/0005-recorded-storm-demo.md).
+
 ## 6. Resilience
 
 | Concern         | Rule                                                                                                                                                    |
@@ -291,6 +296,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 - Heatmap: MapLibre `heatmap` layer, weight = level/4, ramp green → yellow → orange → red → purple, unknown = grey; fades to circles above zoom 9. 49 FeatureCollections built once with `useMemo`; slider calls `setData`, throttled with `requestAnimationFrame`. Play button steps 1 h / 400 ms. Toggle: risk / wind / rain / snow. Label shows absolute local time and offset.
 - Route cards: rank badge, duration, distance, stacked bar of miles by level, reason on the winner; hover highlights route; click selects.
 - Checkpoint popup: ETA (local, with tz), wind, gust, rain, snow, level, reasons.
+- Demo: a "Try the stormy demo" button sets the form to the recorded trip (keeping the load and the spacing) and calls `/api/demo`; a plan whose weather source is `demo` carries a banner that it is a recording, not a live forecast. Try again repeats the demo.
 - States: cold start ("Waking up the server…", triggered by `/api/health` ping on load), loading steps, error per code, empty, stale inputs ("Inputs changed — re-plan").
 - Accessibility: never color alone; keyboard slider; focus management; WCAG AA contrast.
 - Attribution visible: © OpenStreetMap contributors, OSRM, Open-Meteo (CC BY 4.0), OpenFreeMap.
@@ -320,11 +326,12 @@ backend/
   planner/
     domain/          pure: models, risk, geometry, sampling, weather_select, scoring, ranking, corridor, routes_select
     infra/           http (timeouts, retry, breaker, deadline), cache, metrics (per-request counters), jsonlog (JSON log formatter)
-    providers/       routing_osrm, routing_ors, weather_openmeteo, geocode_photon, geocode_nominatim, protocols
-    services/        plan (facade), container (DI)
+    providers/       routing_osrm, routing_ors, weather_openmeteo, weather_nws, geocode_photon, geocode_nominatim, recorded (demo replay), protocols
+    services/        plan (facade), demo, container (DI)
     api/             serializers, views, errors, urls
   tests/             unit/, providers/ (respx fixtures), api/
-  fixtures/          recorded upstream JSON
+  fixtures/          recorded upstream JSON; demo/ is the recorded storm corridor
+  scripts/           record_demo.py
 frontend/
   src/ api/ components/ map/ hooks/ lib/ types/
   e2e/
