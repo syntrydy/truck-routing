@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ATTRIBUTION, INITIAL_CENTER, INITIAL_ZOOM, MAP_STYLE_URL } from "./config.ts";
 import { fake, fakeMapLibreModule } from "./fakeMapLibre.ts";
 import { MapView } from "./MapView.tsx";
+import { preloadMapLibre } from "./useMap.ts";
 
 const idleProps = {
   plan: null,
@@ -37,6 +38,17 @@ describe("MapView", () => {
     await waitFor(() => {
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
+  });
+
+  it("shares the load that was started ahead of the app: one map, never an error", async () => {
+    preloadMapLibre();
+    preloadMapLibre();
+
+    render(<MapView {...idleProps} />);
+
+    await mapCreated();
+    expect(fake.maps).toHaveLength(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("creates the map in its container, centred on the United States", async () => {

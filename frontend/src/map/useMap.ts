@@ -30,6 +30,14 @@ function loadMapLibre() {
 }
 
 /**
+ * Starts fetching MapLibre now, so that it downloads while the app starts instead of after it
+ * has mounted. Anything that goes wrong is left for `useMap` to meet, which asks again.
+ */
+export function preloadMapLibre(): void {
+  loadMapLibre().catch(() => undefined);
+}
+
+/**
  * Creates the map inside `container` once, and removes it when the component goes away.
  * The map never depends on props or state, so re-rendering cannot re-create it; layers are
  * added by other hooks through the returned `map`.
