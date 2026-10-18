@@ -344,7 +344,7 @@ class TestWeatherOutage:
         result = service.plan(request_for(routes[0]))
 
         assert result.banner is PlanBanner.NO_SAFE_ROUTE
-        assert any("Weather is unavailable for" in note for note in result.notes)
+        assert any("of the weather map" in note for note in result.notes)
         assert result.recommended_route_id is None
         assert result.recommendation_reason is None
         assert len(result.routes) == 3  # still ranked

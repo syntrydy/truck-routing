@@ -268,7 +268,7 @@ Errors (single shape): `{"error": {"code": "NO_ROUTE", "message": "…", "field"
 | 503    | `UPSTREAM_UNAVAILABLE` (breaker open)                          |
 | 504    | `UPSTREAM_TIMEOUT`                                             |
 
-Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner `WEATHER_UNAVAILABLE`.
+Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner `WEATHER_UNAVAILABLE`. The banner is for a checkpoint without weather; heatmap cells off the routes without weather only add a note and are drawn grey.
 
 ## 6. Resilience
 
