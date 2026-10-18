@@ -162,7 +162,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
   - `render.yaml`, `vercel.json` (SPA rewrite + security headers/CSP), env var docs, deploy steps in README.
   - AC: both deployed; `/api/ready` healthy; CORS limited to the Vercel origin; production smoke check passes.
 
-- [ ] **B-37 docs: README and decision records** — `type:docs` `area:infra`
+- [x] **B-37 docs: README and decision records** — #86 — `type:docs` `area:infra`
   - README: overview, live links, architecture diagram (mermaid), how it works (pipeline), assumptions register, API summary, local setup in ≤ 3 commands, testing, security scanning, known limits, scaling path. ADRs in `docs/adr/` for: routing provider choice, risk boundary interpretation, No Travel ranking, single-payload heatmap.
   - AC: a new developer can run the app locally from the README alone.
 
