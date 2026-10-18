@@ -177,10 +177,11 @@ class OpenMeteoWeatherProvider:
         locations = payload if isinstance(payload, list) else [payload]
         if len(locations) != len(batch):
             raise _shape.error(f"expected {len(batch)} locations, got {len(locations)}")
-        return [_series(location) for location in locations]
+        return [parse_location(location) for location in locations]
 
 
-def _series(location: object) -> HourlySeries:
+def parse_location(location: object) -> HourlySeries:
+    """One location of an Open-Meteo reply (or a recording of one) as an hourly series."""
     entry = _shape.mapping(location, "location")
     _check_units(_shape.mapping(entry.get("hourly_units"), "hourly_units"))
     hourly = _shape.mapping(entry.get("hourly"), "hourly")
