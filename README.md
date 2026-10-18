@@ -7,6 +7,25 @@ A web app that recommends the safest truck route between two places, based on th
 
 The API is on a free plan and sleeps when idle, so the first request after a quiet period takes up to a minute.
 
+![The app after planning Boulder to Fort Collins: route cards on the left, routes and the risk heatmap on the map, the forecast slider below](docs/images/plan-overview.png)
+
+## Contents
+
+- [Features](#features)
+- [Walkthrough](#walkthrough)
+- [Architecture](#architecture)
+- [How a plan is made](#how-a-plan-is-made)
+- [Getting started](#getting-started)
+- [API](#api)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Testing](#testing)
+- [Security scanning](#security-scanning)
+- [Deployment](#deployment)
+- [Assumptions and known limits](#assumptions-and-known-limits)
+- [Data sources and attribution](#data-sources-and-attribution)
+- [License](#license)
+
 ## Features
 
 - Plan a trip from one place to another with a departure time, a load weight and a checkpoint spacing (10, 25 or 50 miles).
@@ -16,6 +35,14 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 - A weather heatmap along the corridor for the 48 hours after departure, with a slider and play button, and a truck marker that moves along the selected route. It can show risk, wind, rain or snow.
 - Honest about gaps: where weather is missing the risk is Unknown, never Low, and the route is flagged as low confidence.
 - Keyboard accessible, with a phone layout, and clear messages for slow starts and for each kind of error.
+
+## Walkthrough
+
+1. **Choose the trip.** Pick two places with the search boxes (they start as Chicago and Denver), then set the departure time, the load in pounds and the checkpoint spacing. Press **Plan trip**.
+2. **Read the routes.** Each card shows the duration, distance, the worst risk level and a bar of how many miles fall in each level. The recommended route is marked, with the reason it won. Banners above the cards list assumptions and gaps, such as fewer than three routes or missing weather.
+3. **Open a checkpoint.** Click a dot on the map to see the arrival time, the weather expected at that moment and the reasons for its risk level, for example "Wind 47 mph with 42,000 lb load".
+4. **Move through time.** Drag the forecast slider, or press **Play**, to watch the heatmap and the truck marker change over the 48 hours after departure. Switch the map between **Risk**, **Wind**, **Rain** and **Snow**. With the keyboard, focus the slider and use the arrow keys.
+5. **Compare.** Select another route card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
 
 ## Architecture
 
@@ -78,11 +105,11 @@ The API is described by an OpenAPI schema at `/api/schema/` (checked in at `back
 | GET    | `/api/geocode?q=` | Up to 8 places for a text of 3 to 100 characters               |
 | POST   | `/api/plan`       | Routes, checkpoints, ranking and the heatmap for a trip        |
 
-Errors share one shape, `{"error": {"code", "message", "field", "request_id"}}`, with the codes `VALIDATION`, `TOO_CLOSE`, `NO_ROUTE`, `RATE_LIMITED`, `UPSTREAM_ERROR`, `UPSTREAM_UNAVAILABLE` and `UPSTREAM_TIMEOUT`. Missing weather is not an error: the plan comes back with Unknown levels and a banner. Limits are 10 plans and 60 searches per minute per client.
+Errors share one shape, `{"error": {"code", "message", "field", "request_id"}}`, with the codes `VALIDATION`, `TOO_CLOSE`, `NO_ROUTE`, `RATE_LIMITED`, `UPSTREAM_ERROR`, `UPSTREAM_UNAVAILABLE`, `UPSTREAM_TIMEOUT`, `NOT_FOUND` and `INTERNAL_ERROR`. Missing weather is not an error: the plan comes back with Unknown levels and a banner. Limits are 10 plans and 60 searches per minute per client.
 
 ## Configuration
 
-The backend reads its settings from environment variables (`backend/.env` in development). Defaults are safe for development; production sets the ones marked **required**.
+The backend reads its settings from environment variables; for local development copy `backend/.env.example` to `backend/.env`. Defaults are safe for development; production sets the ones marked **required**.
 
 | Variable                                                      | Default                      | Meaning                                                                                          |
 | ------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
@@ -110,15 +137,12 @@ The frontend reads two build-time variables: `VITE_API_BASE_URL` (the API's orig
 Prerequisites: git, [uv](https://docs.astral.sh/uv/), Node 20+, make and [pre-commit](https://pre-commit.com/).
 
 ```bash
-make check             # everything CI runs (backend and frontend)
-make be-test ARGS="-k health"   # focused backend tests
-pre-commit install     # run the hooks on every commit
-pre-commit run --all-files
+pre-commit install            # run the hooks on every commit
+pre-commit run --all-files    # or run them once, on everything
+make check                    # everything CI runs (see Testing)
 ```
 
 The hooks run ruff, mypy, prettier, eslint and gitleaks, plus basic file hygiene checks. ruff, mypy, prettier and eslint come from the project lockfiles, so hook results match CI.
-
-The backend reads its settings from the environment; for local development copy `backend/.env.example` to `backend/.env`.
 
 ## Testing
 
