@@ -47,7 +47,7 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 2. **Read the routes.** Each card shows the duration, distance, the worst risk level and a bar of how many miles fall in each level. The recommended route is marked, with the reason it won. Banners above the cards list assumptions and gaps, such as fewer than three routes or missing weather.
 3. **Open a checkpoint.** Click a dot on the map to see the arrival time, the weather expected at that moment and the reasons for its risk level, for example "Wind 47 mph with 42,000 lb load".
 4. **Move through time.** Drag the forecast slider, or press **Play**, to watch the heatmap and the truck marker change over the 48 hours after departure. Switch the map between **Risk**, **Wind**, **Rain** and **Snow**. With the keyboard, focus the slider and use the arrow keys.
-5. **Compare.** Select another route card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
+5. **Compare.** Each route has its own line pattern and letter on the map (A solid, B dashed, C dotted), shown again beside its card. Hover a card to light its line, and select a card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
 
 ## Stormy demo
 
