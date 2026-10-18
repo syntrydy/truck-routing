@@ -1,10 +1,11 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { StrictMode, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ATTRIBUTION, INITIAL_CENTER, INITIAL_ZOOM, MAP_STYLE_URL } from "./config.ts";
 import { fake, fakeMapLibreModule } from "./fakeMapLibre.ts";
 import { MapView } from "./MapView.tsx";
+import { preloadMapLibre } from "./useMap.ts";
 
 const idleProps = {
   plan: null,
@@ -19,6 +20,9 @@ vi.mock("maplibre-gl", () => fakeMapLibreModule);
 
 beforeEach(() => {
   fake.reset();
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 async function mapCreated() {
@@ -37,6 +41,17 @@ describe("MapView", () => {
     await waitFor(() => {
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
+  });
+
+  it("shares the load that was started ahead of the app: one map, never an error", async () => {
+    preloadMapLibre();
+    preloadMapLibre();
+
+    render(<MapView {...idleProps} />);
+
+    await mapCreated();
+    expect(fake.maps).toHaveLength(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("creates the map in its container, centred on the United States", async () => {
@@ -59,6 +74,16 @@ describe("MapView", () => {
 
     expect(fake.attributionOptions).toEqual([
       { compact: false, customAttribution: [...ATTRIBUTION] },
+    ]);
+  });
+
+  it("folds the credit behind a button on a phone, where the full line covered the map", async () => {
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    render(<MapView {...idleProps} />);
+    await mapCreated();
+
+    expect(fake.attributionOptions).toEqual([
+      { compact: true, customAttribution: [...ATTRIBUTION] },
     ]);
     const credit = ATTRIBUTION.join(" ");
     for (const name of ["OSRM", "Open-Meteo", "CC BY 4.0"]) {

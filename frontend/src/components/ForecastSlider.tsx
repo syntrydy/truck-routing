@@ -1,7 +1,8 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 
 import { formatMoment, formatHoursAhead, frameTime } from "../lib/forecastTime.ts";
 import { HEATMAP_VARIABLES, type HeatmapVariable } from "../lib/heatmap.ts";
+import { isCramped } from "../lib/screen.ts";
 import { HeatmapLegend } from "./HeatmapLegend.tsx";
 
 interface ForecastSliderProps {
@@ -28,6 +29,9 @@ export function ForecastSlider({
   onVariableChange,
 }: ForecastSliderProps) {
   const id = useId();
+  // The explanation is open where there is room, and folded on a phone, where it is the part to
+  // spare: the colours say the rest.
+  const [explained, setExplained] = useState(() => !isCramped());
   const time = `${formatMoment(frameTime(startIso, hour))}, ${formatHoursAhead(hour)}`;
   return (
     <div className="forecast">
@@ -78,10 +82,19 @@ export function ForecastSlider({
         </fieldset>
         <div className="forecast__key">
           <HeatmapLegend variable={variable} />
-          <p className="forecast__note">
-            Map colours show the forecast at the time above. The dots on the routes show the weather
-            when the truck gets there.
-          </p>
+          <details
+            className="forecast__how"
+            open={explained}
+            onToggle={(event) => {
+              setExplained(event.currentTarget.open);
+            }}
+          >
+            <summary>How to read the colours</summary>
+            <p className="forecast__note">
+              Map colours show the forecast at the time above. The dots on the routes show the
+              weather when the truck gets there.
+            </p>
+          </details>
         </div>
       </div>
     </div>
