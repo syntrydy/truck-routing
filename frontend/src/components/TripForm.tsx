@@ -14,6 +14,7 @@ import {
   type TripField,
   type TripValues,
 } from "../lib/trip.ts";
+import { StormIcon, SwapIcon } from "./icons.tsx";
 import { PlaceInput } from "./PlaceInput.tsx";
 
 interface TripFormProps {
@@ -78,99 +79,128 @@ export const TripForm = memo(function TripForm({
     sendOrShowProblems(toPlanRequest(next, current), onDemo);
   };
 
+  const canSwap = values.origin !== null && values.destination !== null;
+  const swap = () => {
+    update({ origin: values.destination, destination: values.origin });
+  };
+
   return (
     <form ref={form} className="trip-form" noValidate onSubmit={submit}>
-      <div className="trip-form__demo">
+      <div className="demo-card">
+        <span className="demo-card__icon">
+          <StormIcon />
+        </span>
+        <div className="demo-card__body">
+          <p className="demo-card__title">No storm today?</p>
+          <p id={`${id}-demo-hint`} className="demo-card__hint">
+            See High, Severe and No Travel at work: Denver to Salt Lake City in a recording of a
+            real wind storm on I-80 in Wyoming. Not a live forecast.
+          </p>
+          <button
+            type="button"
+            className="button button--demo"
+            aria-describedby={`${id}-demo-hint`}
+            onClick={demo}
+          >
+            Try the stormy demo
+          </button>
+        </div>
+      </div>
+
+      <div className="route-pair">
+        <div className="route-pair__row route-pair__row--start">
+          <PlaceInput
+            id={`${id}-origin`}
+            label="From"
+            value={values.origin}
+            onChange={(origin) => {
+              update({ origin });
+            }}
+            onBlur={() => {
+              reveal("origin");
+            }}
+            error={errorFor("origin")}
+          />
+        </div>
+        <div className="route-pair__row route-pair__row--end">
+          <PlaceInput
+            id={`${id}-destination`}
+            label="To"
+            value={values.destination}
+            onChange={(destination) => {
+              update({ destination });
+            }}
+            onBlur={() => {
+              reveal("destination");
+            }}
+            error={errorFor("destination")}
+          />
+        </div>
         <button
           type="button"
-          className="trip-form__demo-button"
-          aria-describedby={`${id}-demo-hint`}
-          onClick={demo}
+          className="route-pair__swap"
+          aria-label="Swap start and destination"
+          disabled={!canSwap}
+          onClick={swap}
         >
-          Try the stormy demo
+          <SwapIcon />
         </button>
-        <p id={`${id}-demo-hint`} className="field__hint">
-          See High, Severe and No Travel at work: Denver to Salt Lake City in a recording of a real
-          wind storm on I-80 in Wyoming. Not a live forecast.
-        </p>
-      </div>
-      <PlaceInput
-        id={`${id}-origin`}
-        label="From"
-        value={values.origin}
-        onChange={(origin) => {
-          update({ origin });
-        }}
-        onBlur={() => {
-          reveal("origin");
-        }}
-        error={errorFor("origin")}
-      />
-      <PlaceInput
-        id={`${id}-destination`}
-        label="To"
-        value={values.destination}
-        onChange={(destination) => {
-          update({ destination });
-        }}
-        onBlur={() => {
-          reveal("destination");
-        }}
-        error={errorFor("destination")}
-      />
-
-      <div className="field">
-        <label htmlFor={`${id}-departure`}>Departure</label>
-        <input
-          id={`${id}-departure`}
-          type="datetime-local"
-          value={values.departure}
-          aria-invalid={errorFor("departure") !== undefined}
-          aria-describedby={`${id}-departure-hint${errorFor("departure") === undefined ? "" : ` ${id}-departure-error`}`}
-          onChange={(event) => {
-            update({ departure: event.target.value });
-          }}
-          onBlur={() => {
-            reveal("departure");
-          }}
-        />
-        <p id={`${id}-departure-hint`} className="field__hint">
-          Time zone: {timeZoneLabel(current)}
-        </p>
-        {errorFor("departure") !== undefined && (
-          <p id={`${id}-departure-error`} className="field__error">
-            {errorFor("departure")}
-          </p>
-        )}
       </div>
 
-      <div className="field">
-        <label htmlFor={`${id}-load`}>Load (lb)</label>
-        <input
-          id={`${id}-load`}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          value={values.load}
-          aria-invalid={errorFor("load") !== undefined}
-          aria-describedby={`${id}-load-hint${errorFor("load") === undefined ? "" : ` ${id}-load-error`}`}
-          onChange={(event) => {
-            update({ load: event.target.value });
-          }}
-          onBlur={() => {
-            reveal("load");
-          }}
-        />
-        <p id={`${id}-load-hint`} className="field__hint">
-          {load !== null && load > HEAVY_LOAD_LB
-            ? `A load above ${HEAVY_LOAD_LB.toLocaleString("en-US")} lb exceeds the usual legal limit.`
-            : "Whole pounds, 0 to 200,000. Heavy loads have stricter wind limits."}
-        </p>
-        {errorFor("load") !== undefined && (
-          <p id={`${id}-load-error`} className="field__error">
-            {errorFor("load")}
+      <div className="trip-form__when">
+        <div className="field">
+          <label htmlFor={`${id}-departure`}>Departure</label>
+          <input
+            id={`${id}-departure`}
+            type="datetime-local"
+            value={values.departure}
+            aria-invalid={errorFor("departure") !== undefined}
+            aria-describedby={`${id}-departure-hint${errorFor("departure") === undefined ? "" : ` ${id}-departure-error`}`}
+            onChange={(event) => {
+              update({ departure: event.target.value });
+            }}
+            onBlur={() => {
+              reveal("departure");
+            }}
+          />
+          <p id={`${id}-departure-hint`} className="field__hint">
+            Time zone: {timeZoneLabel(current)}
           </p>
-        )}
+          {errorFor("departure") !== undefined && (
+            <p id={`${id}-departure-error`} className="field__error">
+              {errorFor("departure")}
+            </p>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor={`${id}-load`}>Load (lb)</label>
+          <input
+            id={`${id}-load`}
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            value={values.load}
+            aria-invalid={errorFor("load") !== undefined}
+            aria-describedby={`${id}-load-hint${errorFor("load") === undefined ? "" : ` ${id}-load-error`}`}
+            onChange={(event) => {
+              update({ load: event.target.value });
+            }}
+            onBlur={() => {
+              reveal("load");
+            }}
+          />
+          <p id={`${id}-load-hint`} className="field__hint">
+            {load !== null && load > HEAVY_LOAD_LB
+              ? `A load above ${HEAVY_LOAD_LB.toLocaleString("en-US")} lb exceeds the usual legal limit.`
+              : "0 to 200,000 lb. Heavier loads get stricter wind limits."}
+          </p>
+          {errorFor("load") !== undefined && (
+            <p id={`${id}-load-error`} className="field__error">
+              {errorFor("load")}
+            </p>
+          )}
+        </div>
       </div>
 
       <fieldset className="segmented">
@@ -196,7 +226,7 @@ export const TripForm = memo(function TripForm({
           Inputs changed — re-plan
         </p>
       )}
-      <button type="submit" className="trip-form__submit">
+      <button type="submit" className="button button--primary">
         {planned === null ? "Plan trip" : "Re-plan"}
       </button>
     </form>

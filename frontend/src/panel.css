@@ -1,0 +1,841 @@
+/*
+ * The left panel: the header's tagline, the trip form, messages, and the results.
+ * Colours, spacing, radii and type sizes come from the tokens in styles.css; nothing here is a
+ * one-off value, so the panel changes as one when a token does.
+ */
+
+/* ---------- Buttons ---------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-4);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.button--primary {
+  width: 100%;
+  background: var(--brand);
+  color: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.button--primary:hover {
+  background: var(--brand-strong);
+}
+
+.button--secondary {
+  background: var(--surface);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.button--secondary:hover {
+  background: var(--brand-tint);
+}
+
+.button--demo {
+  background: var(--surface);
+  border-color: var(--demo-edge);
+  color: var(--demo-edge);
+}
+
+.button--demo:hover {
+  background: var(--demo-bg);
+}
+
+.button--small {
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Header text, messages and small print ---------- */
+.tagline {
+  margin: 0 0 var(--space-4);
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+/* A family of four tones. The tone is colour, and always an icon and a title as well. */
+.messages {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.callout {
+  --tone-edge: var(--brand);
+  --tone-bg: var(--brand-tint);
+  --tone-ink: var(--ink);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--tone-edge) 30%, transparent);
+  border-left: 4px solid var(--tone-edge);
+  border-radius: var(--radius-md);
+  background: var(--tone-bg);
+  color: var(--tone-ink);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.messages .callout {
+  margin-top: 0;
+}
+
+.callout--caution {
+  --tone-edge: var(--caution-edge);
+  --tone-bg: var(--caution-bg);
+  --tone-ink: var(--caution-ink);
+}
+
+.callout--danger {
+  --tone-edge: var(--danger-edge);
+  --tone-bg: var(--danger-bg);
+}
+
+.callout--demo {
+  --tone-edge: var(--demo-edge);
+  --tone-bg: var(--demo-bg);
+  --tone-ink: var(--demo-ink);
+}
+
+.callout__icon {
+  display: grid;
+  place-items: center;
+  color: var(--tone-edge);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.callout__title {
+  margin: 0 0 var(--space-1);
+  font-weight: 700;
+}
+
+.callout__body p {
+  margin: 0 0 var(--space-1);
+  color: inherit;
+}
+
+.callout__body p:last-child {
+  margin-bottom: 0;
+}
+
+.callout__body .button {
+  margin-top: var(--space-2);
+}
+
+.callout__reference {
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+
+/* Assumptions and small print: quiet, not a box. */
+.footnotes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+
+.footnotes li + li {
+  margin-top: var(--space-1);
+}
+
+/* What to expect, before the first plan */
+.guide {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.guide__title {
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.guide__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+
+.guide__list li {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.guide__list li::before {
+  content: "";
+  position: absolute;
+  top: 0.45em;
+  left: 0.25rem;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* Planning is under way: the same family as a message, with its steps. */
+.progress {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--brand-soft);
+  border-left: 4px solid var(--brand);
+  border-radius: var(--radius-md);
+  background: var(--brand-tint);
+}
+
+.progress__title {
+  margin: 0 0 var(--space-2);
+  font-weight: 700;
+}
+
+.progress__steps {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.progress__mark {
+  display: inline-block;
+  width: 1.25rem;
+  font-weight: 700;
+}
+
+.progress__step--waiting {
+  color: var(--ink-soft);
+}
+
+.progress__step--in-progress {
+  font-weight: 700;
+}
+
+.progress__note {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+
+/* ---------- The trip form ---------- */
+.trip-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* For people who do not want to type a trip: quiet, but the first thing in the panel. */
+.demo-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4) var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--demo-edge) 25%, transparent);
+  border-radius: var(--radius-md);
+  background: var(--demo-bg);
+  color: var(--demo-ink);
+}
+
+.demo-card__icon {
+  color: var(--demo-edge);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.demo-card__title {
+  margin: 0 0 var(--space-1);
+  color: inherit;
+  font-weight: 700;
+}
+
+.demo-card__hint {
+  margin: 0 0 var(--space-3);
+  color: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.demo-card .button {
+  width: 100%;
+}
+
+.field {
+  position: relative;
+  display: grid;
+  gap: var(--label-gap);
+  min-width: 0;
+}
+
+.field label,
+.segmented legend {
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: var(--label-h);
+}
+
+.field input {
+  width: 100%;
+  min-height: var(--input-h);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.field input:focus-visible,
+.segmented input:focus-visible + span {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: var(--danger-edge);
+  border-width: 2px;
+}
+
+.field__hint,
+.field__status {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+
+.field__status:empty {
+  display: none;
+}
+
+.field__error {
+  margin: 0;
+  color: var(--danger-edge);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.field__error::before {
+  content: "Problem: ";
+}
+
+/* From and To as one trip: a line joins the start to the end, and one button swaps them. */
+.route-pair {
+  --pair-gap: var(--space-3);
+  --marker: 0.875rem;
+  --marker-top: calc(var(--label-h) + var(--label-gap) + (var(--input-h) - var(--marker)) / 2);
+  position: relative;
+  display: grid;
+  gap: var(--pair-gap);
+  padding-right: 2.75rem;
+}
+
+.route-pair__row {
+  position: relative;
+  padding-left: 1.75rem;
+}
+
+.route-pair__row::before {
+  content: "";
+  position: absolute;
+  top: var(--marker-top);
+  left: 0.125rem;
+  width: var(--marker);
+  height: var(--marker);
+  border: 0.1875rem solid var(--brand);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.route-pair__row--end::before {
+  background: var(--brand);
+  box-shadow: inset 0 0 0 0.125rem var(--surface);
+}
+
+/* The line: the first row draws down to the second, the second draws up to the first. */
+.route-pair__row--start::after,
+.route-pair__row--end::after {
+  content: "";
+  position: absolute;
+  left: calc(0.125rem + var(--marker) / 2 - 1px);
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, var(--line-strong) 0 3px, transparent 3px 6px);
+}
+
+.route-pair__row--start::after {
+  top: calc(var(--marker-top) + var(--marker) + 0.125rem);
+  bottom: calc(-1 * var(--pair-gap));
+}
+
+.route-pair__row--end::after {
+  top: calc(-1 * var(--pair-gap));
+  height: calc(var(--pair-gap) + var(--marker-top) - 0.125rem);
+}
+
+.route-pair__swap {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--brand);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.route-pair__swap:hover:not(:disabled) {
+  background: var(--brand-tint);
+}
+
+.route-pair__swap:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.route-pair__swap:disabled {
+  color: var(--line-strong);
+  cursor: not-allowed;
+}
+
+/* When and how heavy. */
+.trip-form__when {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.segmented {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented legend {
+  margin-bottom: var(--label-gap);
+  padding: 0;
+}
+
+.segmented__option {
+  position: relative;
+  flex: 1;
+}
+
+.segmented__option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented__option span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--input-h);
+  margin-left: -1px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.segmented__option:hover input:not(:checked) + span {
+  background: var(--brand-tint);
+}
+
+.segmented__option:first-of-type span {
+  margin-left: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.segmented__option:last-of-type span {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Chosen: filled and marked with a tick, so it does not depend on colour. */
+.segmented__option input:checked + span {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.segmented__option input:checked + span::before {
+  content: "✓ ";
+}
+
+.trip-form__stale {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--caution-edge);
+  border-radius: var(--radius-sm);
+  background: var(--caution-bg);
+  color: var(--caution-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* The trip that was planned, in one card, with a way back to the form. */
+.trip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.trip-summary__text {
+  flex: 1 1 12rem;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.trip-summary .button {
+  flex: none;
+}
+
+/* The place suggestions under a From or To field. */
+[role="listbox"] {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  max-height: 16rem;
+  margin: 0.125rem 0 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+[role="listbox"][hidden] {
+  display: none;
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.option--active {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  background: var(--brand-soft);
+}
+
+.option__kind {
+  flex: none;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+  text-transform: capitalize;
+}
+
+/* ---------- The results ---------- */
+.route-cards h2,
+.ranking__title {
+  margin: var(--space-5) 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.route-cards h2:focus {
+  outline: none;
+}
+
+.route-cards__list {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.route-card--hovered {
+  border-color: var(--brand-hover);
+}
+
+/* The best route carries a green edge; the one shown on the map is outlined in the brand colour. */
+.route-card--recommended {
+  box-shadow:
+    inset 4px 0 0 var(--good-edge),
+    var(--shadow-1);
+}
+
+.route-card--selected {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  box-shadow:
+    0 0 0 1px var(--brand),
+    var(--shadow-1);
+}
+
+.route-card--selected.route-card--recommended {
+  box-shadow:
+    inset 4px 0 0 var(--good-edge),
+    0 0 0 1px var(--brand),
+    var(--shadow-1);
+}
+
+.route-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-md, 1rem);
+}
+
+.route-card__button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Stretch the button over the whole card, so that the card is the click target. */
+.route-card__button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.route-card__button:focus-visible {
+  outline: none;
+}
+
+.route-card:has(.route-card__button:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.route-card__swatch {
+  flex: none;
+  width: 2rem;
+  height: 0.4rem;
+  stroke: var(--brand);
+}
+
+.route-card__rank {
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--surface);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.route-card__facts,
+.route-card__reason,
+.route-card__warning {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.route-card__facts {
+  color: var(--ink-soft);
+}
+
+.route-card__reason {
+  color: var(--ink);
+}
+
+.badge {
+  padding: 0.0625rem var(--space-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.badge--good {
+  border-color: var(--good-edge);
+  background: var(--good-bg);
+  color: var(--good-ink);
+}
+
+.badge--warn {
+  border-color: var(--caution-edge);
+  background: var(--caution-bg);
+  color: var(--caution-ink);
+}
+
+.risk-bar {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.risk-bar__track {
+  display: flex;
+  height: 0.625rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--track);
+}
+
+.risk-bar__segment {
+  display: block;
+  height: 100%;
+}
+
+.risk-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.125rem var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+}
+
+.risk-bar__swatch {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: var(--space-1);
+  border-radius: 2px;
+}
+
+/* Why this route? */
+.ranking {
+  font-size: var(--text-sm);
+}
+
+.ranking__title {
+  margin-bottom: var(--space-2);
+  cursor: pointer;
+}
+
+.ranking__table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.ranking__table th,
+.ranking__table td {
+  padding: var(--space-1) 0.375rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ranking__table thead th {
+  font-weight: 700;
+}
+
+.ranking__picked {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
+.ranking__table tbody th {
+  width: 31%;
+  font-weight: 600;
+}
+
+.ranking__best {
+  font-weight: 700;
+}
+
+.ranking__decided {
+  display: block;
+  color: var(--brand);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.ranking__row--decisive {
+  background: var(--brand-tint);
+}
+
+/* ---------- A touch screen: everything that is tapped is at least 44 px high ---------- */
+@media (pointer: coarse) {
+  :root {
+    --input-h: 2.75rem;
+  }
+
+  .button,
+  .route-card__button {
+    min-height: 2.75rem;
+  }
+
+  .button--small {
+    min-height: 2.75rem;
+  }
+
+  .route-pair__swap {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .ranking__title {
+    padding-block: var(--space-2);
+  }
+}

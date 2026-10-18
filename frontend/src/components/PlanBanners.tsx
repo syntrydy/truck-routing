@@ -1,6 +1,7 @@
 import { memo } from "react";
 
 import type { PlanResponse } from "../api/types.ts";
+import { Callout } from "./Callout.tsx";
 
 /** The start of the note about places without weather; the weather banner says the same. */
 const MISSING_WEATHER_NOTE = "Weather is unavailable for ";
@@ -19,29 +20,35 @@ export const PlanBanners = memo(function PlanBanners({ plan }: PlanBannersProps)
     plan.banner === "WEATHER_UNAVAILABLE"
       ? plan.notes.filter((note) => !note.startsWith(MISSING_WEATHER_NOTE))
       : plan.notes;
+  const demo = plan.meta.weather_source === DEMO_SOURCE;
+  if (!demo && plan.banner === null && notes.length === 0) {
+    return null;
+  }
   return (
-    <div className="banners">
-      {plan.meta.weather_source === DEMO_SOURCE && (
-        <p className="banner banner--demo" role="status">
-          <strong>Demo: a recording, not a live forecast.</strong> These routes and this weather are
-          from a real wind storm on I-80 in Wyoming on 17 January 2024, replayed from the moment you
-          started the demo. Do not use it to plan a real trip.
-        </p>
+    <div className="messages">
+      {demo && (
+        <Callout tone="demo" title="Demo: a recording, not a live forecast" role="status">
+          <p>
+            A real wind storm on I-80 in Wyoming (17 January 2024), replayed from the moment you
+            started the demo. Do not use it to plan a real trip.
+          </p>
+        </Callout>
       )}
       {plan.banner === "NO_SAFE_ROUTE" && (
-        <p className="banner banner--danger" role="alert">
-          <strong>No safe route.</strong> Every route has a stretch where weather makes travel
-          unsafe. The routes are still ranked, but consider leaving at another time.
-        </p>
+        <Callout tone="danger" title="No safe route" role="alert">
+          <p>
+            Every route has a stretch where weather makes travel unsafe. The routes are still
+            ranked, but consider leaving at another time.
+          </p>
+        </Callout>
       )}
       {plan.banner === "WEATHER_UNAVAILABLE" && (
-        <p className="banner banner--warn" role="status">
-          <strong>Weather is unavailable for some places.</strong> Their risk is shown as unknown,
-          not as low, so treat those stretches with care.
-        </p>
+        <Callout tone="caution" title="Weather is unavailable for some places" role="status">
+          <p>Their risk is shown as unknown, not as low, so treat those stretches with care.</p>
+        </Callout>
       )}
       {notes.length > 0 && (
-        <ul className="banner banner--info" aria-label="Notes about this plan">
+        <ul className="footnotes" aria-label="Notes about this plan">
           {notes.map((note) => (
             <li key={note}>{note}</li>
           ))}

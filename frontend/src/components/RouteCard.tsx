@@ -34,6 +34,7 @@ export function RouteCard({
   const { summary } = route;
   const classes = [
     "route-card",
+    recommended && "route-card--recommended",
     selected && "route-card--selected",
     hovered && "route-card--hovered",
   ]

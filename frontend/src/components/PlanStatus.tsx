@@ -3,6 +3,7 @@ import { memo } from "react";
 import { ApiError } from "../api/errors.ts";
 import type { PlanResponse } from "../api/types.ts";
 import { describeError } from "../lib/planErrors.ts";
+import { Callout } from "./Callout.tsx";
 import { PlanProgress } from "./PlanProgress.tsx";
 
 interface PlanStatusProps {
@@ -27,18 +28,17 @@ export const PlanStatus = memo(function PlanStatus({
     const { title, suggestion, retryable } = describeError(error);
     const reference = error instanceof ApiError ? error.requestId : null;
     return (
-      <div className="plan-status plan-status--error" role="alert">
-        <p className="plan-status__title">{title}</p>
+      <Callout tone="danger" title={title} role="alert">
         <p>{suggestion}</p>
         {reference !== null && reference !== "" && (
-          <p className="plan-status__id">Reference: {reference}</p>
+          <p className="callout__reference">Reference: {reference}</p>
         )}
         {retryable && (
-          <button type="button" className="plan-status__retry" onClick={onRetry}>
+          <button type="button" className="button button--secondary" onClick={onRetry}>
             Try again
           </button>
         )}
-      </div>
+      </Callout>
     );
   }
   if (plan !== null) {

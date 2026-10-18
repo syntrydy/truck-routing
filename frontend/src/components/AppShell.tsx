@@ -1,5 +1,7 @@
 import { useId, type ReactNode, type Ref } from "react";
 
+import { TruckIcon } from "./icons.tsx";
+
 interface AppShellProps {
   /** The name of the app: the page's heading, kept in the page even when the sheet is folded. */
   title: string;
@@ -36,7 +38,12 @@ export function AppShell({
   return (
     <div className={sheetOpen ? "shell" : "shell shell--collapsed"}>
       <aside className="shell__panel" aria-label="Trip planner">
-        <h1 className="shell__title">{title}</h1>
+        <h1 className="shell__title">
+          <span className="brand-mark">
+            <TruckIcon />
+          </span>
+          {title}
+        </h1>
         <button
           ref={toggleRef}
           type="button"

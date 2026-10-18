@@ -86,7 +86,7 @@ test("the stormy demo shows danger on the fastest road and says it is a recordin
     routes: { id: string; duration_s: number; summary: { worst_level: string } }[];
   };
 
-  await expect(page.getByText("Demo: a recording, not a live forecast.")).toBeVisible();
+  await expect(page.getByText("Demo: a recording, not a live forecast")).toBeVisible();
   await expect(page.getByText(/^Denver → Salt Lake City · /)).toBeVisible();
   await expect(page.getByRole("heading", { level: 3 })).toHaveCount(3);
   await expect(page.getByText("Recommended", { exact: true })).toHaveCount(1);

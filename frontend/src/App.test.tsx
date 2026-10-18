@@ -273,7 +273,7 @@ describe("states", () => {
   it("explains what to do before a first plan, and stops once there is one", async () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
-    expect(screen.getByText(/Check where you start and where you are going/)).toBeInTheDocument();
+    expect(screen.getByText("Up to three routes, ranked by weather risk")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("button", { name: "Route R1" });
