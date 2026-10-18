@@ -311,7 +311,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 - Why this route?: under the cards, a table of the ranking criteria in the order applied, one column per route (best first), with the best value of a row that tells routes apart marked in words and with a check mark, and the deciding row labelled "decided here". Titled "How the routes were ranked" when no route is safe.
 - Route cards: rank badge, duration, distance, stacked bar of miles by level, reason on the winner; hover highlights the route and shows a one-line summary beside the pointer ("Route A · 9 h · 505 mi · 100 mi No travel"); click selects it and keeps the summary (a touch screen has no hover).
 - Checkpoint popup: ETA (local, with tz), wind, gust, rain, snow, level, reasons.
-- Demo: a "Try the stormy demo" button sets the form to the recorded trip (keeping the load and the spacing) and calls `/api/demo`; a plan whose weather source is `demo` carries a banner that it is a recording, not a live forecast. Try again repeats the demo.
+- Demo: a "Try the stormy demo" button, the first thing in the panel so that a first visit sees it before the fields, sets the form to the recorded trip (keeping the load and the spacing) and calls `/api/demo`; a plan whose weather source is `demo` carries a banner that it is a recording, not a live forecast. Try again repeats the demo.
 - States: cold start ("Waking up the server…", triggered by `/api/health` ping on load), loading steps, error per code, empty, stale inputs ("Inputs changed — re-plan").
 - Accessibility: never color alone; keyboard slider; focus management; WCAG AA contrast.
 - Attribution visible: © OpenStreetMap contributors, OSRM, Open-Meteo (CC BY 4.0), OpenFreeMap.
