@@ -549,6 +549,8 @@ body,
 .trip-form__demo {
   display: grid;
   gap: 0.375rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
 }
 
 .trip-form__demo-button {
