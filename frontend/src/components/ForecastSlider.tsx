@@ -1,6 +1,6 @@
 import { useId } from "react";
 
-import { formatFrameTime, formatHoursAhead, frameTime } from "../lib/forecastTime.ts";
+import { formatMoment, formatHoursAhead, frameTime } from "../lib/forecastTime.ts";
 import { HEATMAP_VARIABLES, type HeatmapVariable } from "../lib/heatmap.ts";
 import { HeatmapLegend } from "./HeatmapLegend.tsx";
 
@@ -28,7 +28,7 @@ export function ForecastSlider({
   onVariableChange,
 }: ForecastSliderProps) {
   const id = useId();
-  const time = `${formatFrameTime(frameTime(startIso, hour))}, ${formatHoursAhead(hour)}`;
+  const time = `${formatMoment(frameTime(startIso, hour))}, ${formatHoursAhead(hour)}`;
   return (
     <div className="forecast">
       <div className="forecast__row">
