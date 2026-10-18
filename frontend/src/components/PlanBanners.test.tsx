@@ -23,7 +23,7 @@ describe("PlanBanners", () => {
     render(<PlanBanners plan={planWith({ banner: "NO_SAFE_ROUTE" })} />);
 
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("No safe route.");
+    expect(alert).toHaveTextContent("No safe route");
     expect(alert).toHaveTextContent("still ranked");
     expect(screen.queryByText(/Weather is unavailable/)).not.toBeInTheDocument();
   });
@@ -32,7 +32,7 @@ describe("PlanBanners", () => {
     render(<PlanBanners plan={planWith({ banner: "WEATHER_UNAVAILABLE" })} />);
 
     const status = screen.getByRole("status");
-    expect(status).toHaveTextContent("Weather is unavailable for some places.");
+    expect(status).toHaveTextContent("Weather is unavailable for some places");
     expect(status).toHaveTextContent("unknown, not as low");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -41,7 +41,7 @@ describe("PlanBanners", () => {
     const demo = planWith({ meta: { ...samplePlan().meta, weather_source: "demo" } });
     const { rerender } = render(<PlanBanners plan={demo} />);
 
-    expect(screen.getByRole("status")).toHaveTextContent("Demo: a recording, not a live forecast.");
+    expect(screen.getByRole("status")).toHaveTextContent("Demo: a recording, not a live forecast");
     expect(screen.getByRole("status")).toHaveTextContent("17 January 2024");
 
     rerender(<PlanBanners plan={planWith({ banner: null, notes: [] })} />);
@@ -60,7 +60,7 @@ describe("PlanBanners", () => {
       />,
     );
 
-    expect(screen.getByText("Weather is unavailable for some places.")).toBeInTheDocument();
+    expect(screen.getByText("Weather is unavailable for some places")).toBeInTheDocument();
     expect(screen.queryByText(repeated)).not.toBeInTheDocument();
     expect(screen.getByText("ETAs assume continuous driving at ≤ 65 mph")).toBeInTheDocument();
   });

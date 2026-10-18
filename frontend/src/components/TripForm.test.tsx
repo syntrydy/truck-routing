@@ -375,3 +375,30 @@ describe("the stormy demo", () => {
     expect(load).toHaveFocus();
   });
 });
+
+describe("swapping the start and the destination", () => {
+  const swap = () => screen.getByRole("button", { name: "Swap start and destination" });
+
+  it("exchanges them, in the boxes and in the trip that is sent", async () => {
+    const { user, onSubmit } = setup();
+
+    await user.click(swap());
+    await user.click(submitButton());
+
+    expect(screen.getByRole("combobox", { name: "From" })).toHaveValue(DENVER.label);
+    expect(screen.getByRole("combobox", { name: "To" })).toHaveValue(CHICAGO.label);
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
+      origin: { label: DENVER.label },
+      destination: { label: CHICAGO.label },
+    });
+  });
+
+  it("is switched off until both places are chosen", async () => {
+    const { user } = setup();
+    expect(swap()).toBeEnabled();
+
+    await user.clear(screen.getByRole("combobox", { name: "From" }));
+
+    expect(swap()).toBeDisabled();
+  });
+});

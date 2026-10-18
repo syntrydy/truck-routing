@@ -56,7 +56,7 @@ describe("ServerStatus", () => {
     render(<ServerStatus waking={false} failed />);
 
     const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("The server is not answering.");
+    expect(alert).toHaveTextContent("The server is not answering");
     expect(alert).toHaveTextContent("reload the page");
   });
 

@@ -3,6 +3,7 @@ import { useCallback, useId, useMemo, useRef, useState } from "react";
 import type { PlanRequest } from "./api/types.ts";
 import { useWarmUp } from "./api/useWarmUp.ts";
 import { AppShell } from "./components/AppShell.tsx";
+import { EmptyGuide } from "./components/EmptyGuide.tsx";
 import { PlanBanners } from "./components/PlanBanners.tsx";
 import { PlanStatus } from "./components/PlanStatus.tsx";
 import { RankingTable } from "./components/RankingTable.tsx";
@@ -107,7 +108,9 @@ export function App() {
       sheetSummary={summary}
       panel={
         <>
-          <p>Pick a route, check the weather along it, and drive the safest one.</p>
+          <p className="tagline">
+            Pick a route, check the weather along it, and drive the safest one.
+          </p>
           <ServerStatus waking={warmUp.isPending} failed={warmUp.isError} />
           {planned !== null && !formOpen && (
             <TripSummary request={planned} formId={formId} onEdit={editTrip} />
@@ -121,12 +124,7 @@ export function App() {
             plan={plan.data ?? null}
             onRetry={retry}
           />
-          {hasNothingYet && (
-            <p className="empty-state">
-              Check where you start and where you are going, or change them. You will see up to
-              three routes, ranked by weather risk, and a forecast for the next 48 hours along them.
-            </p>
-          )}
+          {hasNothingYet && <EmptyGuide />}
           {plan.data !== undefined && (
             <>
               <PlanBanners plan={plan.data} />

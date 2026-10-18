@@ -1,6 +1,7 @@
 import { memo } from "react";
 
 import { useDelayedFlag } from "../hooks/useDelayedFlag.ts";
+import { Callout } from "./Callout.tsx";
 
 /** How long the server may take to answer before it is said to be waking up (SPEC section 7). */
 export const COLD_START_AFTER_MS = 3000;
@@ -20,18 +21,22 @@ export const ServerStatus = memo(function ServerStatus({ waking, failed }: Serve
   const slow = useDelayedFlag(waking, COLD_START_AFTER_MS);
   if (failed) {
     return (
-      <p className="server-status server-status--error" role="alert">
-        <strong>The server is not answering.</strong> You can still try to plan a trip; if it does
-        not work, check your connection and reload the page.
-      </p>
+      <Callout tone="danger" title="The server is not answering" role="alert">
+        <p>
+          You can still try to plan a trip; if it does not work, check your connection and reload
+          the page.
+        </p>
+      </Callout>
     );
   }
   if (slow) {
     return (
-      <p className="server-status" role="status">
-        <strong>Waking up the server…</strong> It sleeps when it has not been used for a while, so
-        the first request can take up to a minute. You can fill in the form meanwhile.
-      </p>
+      <Callout tone="info" title="Waking up the server…" role="status">
+        <p>
+          It sleeps when it has not been used for a while, so the first request can take up to a
+          minute. You can fill in the form meanwhile.
+        </p>
+      </Callout>
     );
   }
   return null;

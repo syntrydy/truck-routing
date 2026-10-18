@@ -2,6 +2,7 @@ import { memo } from "react";
 
 import type { PlanRequest } from "../api/types.ts";
 import { summarizeTrip } from "../lib/trip.ts";
+import { PencilIcon } from "./icons.tsx";
 
 interface TripSummaryProps {
   /** The request the plan on screen was made for. */
@@ -22,12 +23,12 @@ export const TripSummary = memo(function TripSummary({
       <p className="trip-summary__text">{summarizeTrip(request)}</p>
       <button
         type="button"
-        className="trip-summary__edit"
+        className="button button--secondary button--small"
         aria-expanded="false"
         aria-controls={formId}
         onClick={onEdit}
       >
-        Edit trip
+        <PencilIcon /> Edit trip
       </button>
     </div>
   );
