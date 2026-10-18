@@ -53,6 +53,11 @@ export class FakeMap {
     fake.maps.push(this);
   }
 
+  /** The element the map was made in, where the real one puts its controls. */
+  getContainer() {
+    return this.options.container as HTMLElement;
+  }
+
   addControl(control: unknown, position?: string) {
     this.controls.push({ control, position });
   }

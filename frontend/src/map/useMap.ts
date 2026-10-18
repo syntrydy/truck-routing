@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useState, type RefObject } from "react";
 
+import { isCramped } from "../lib/screen.ts";
 import { ATTRIBUTION, INITIAL_CENTER, INITIAL_ZOOM, MAP_STYLE_URL } from "./config.ts";
 
 type MapLibre = typeof import("maplibre-gl");
@@ -69,9 +70,18 @@ export function useMap(container: RefObject<HTMLElement | null>): MapState {
           // The end-to-end test finds checkpoints on screen through the map; never in a build.
           Object.assign(window, { __truckMap: created });
         }
+        // The credit is in full where there is room, and one tap away behind a button on a phone,
+        // where the full line covered the place names.
+        const compact = isCramped();
         created.addControl(
-          new maplibre.AttributionControl({ compact: false, customAttribution: [...ATTRIBUTION] }),
+          new maplibre.AttributionControl({ compact, customAttribution: [...ATTRIBUTION] }),
         );
+        if (compact) {
+          // MapLibre starts a compact credit open; here it starts folded behind its button.
+          const credit = created.getContainer().querySelector(".maplibregl-ctrl-attrib");
+          credit?.removeAttribute("open");
+          credit?.classList.remove("maplibregl-compact-show");
+        }
         created.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
         setState({ status: "ready", map: created, maplibre });
       })

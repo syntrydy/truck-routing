@@ -49,7 +49,10 @@ export function AppShell({
         >
           <span className="sheet-toggle__grip" aria-hidden="true" />
           <span className="sheet-toggle__text">{sheetSummary ?? "Trip details"}</span>
-          <span aria-hidden="true">{sheetOpen ? "▾ Hide" : "▴ Show"}</span>
+          <span aria-hidden="true" className="sheet-toggle__hint">
+            {sheetOpen ? "▾" : "▴"}{" "}
+            <span className="sheet-toggle__word">{sheetOpen ? "Hide" : "Show"}</span>
+          </span>
         </button>
         <div id={contentId} className="shell__panel-content">
           {panel}
