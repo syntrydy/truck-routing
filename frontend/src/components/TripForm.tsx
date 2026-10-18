@@ -80,6 +80,20 @@ export const TripForm = memo(function TripForm({
 
   return (
     <form ref={form} className="trip-form" noValidate onSubmit={submit}>
+      <div className="trip-form__demo">
+        <button
+          type="button"
+          className="trip-form__demo-button"
+          aria-describedby={`${id}-demo-hint`}
+          onClick={demo}
+        >
+          Try the stormy demo
+        </button>
+        <p id={`${id}-demo-hint`} className="field__hint">
+          See High, Severe and No Travel at work: Denver to Salt Lake City in a recording of a real
+          wind storm on I-80 in Wyoming. Not a live forecast.
+        </p>
+      </div>
       <PlaceInput
         id={`${id}-origin`}
         label="From"
@@ -185,20 +199,6 @@ export const TripForm = memo(function TripForm({
       <button type="submit" className="trip-form__submit">
         {planned === null ? "Plan trip" : "Re-plan"}
       </button>
-      <div className="trip-form__demo">
-        <button
-          type="button"
-          className="trip-form__demo-button"
-          aria-describedby={`${id}-demo-hint`}
-          onClick={demo}
-        >
-          Try the stormy demo
-        </button>
-        <p id={`${id}-demo-hint`} className="field__hint">
-          Denver to Salt Lake City in a recording of a real wind storm on I-80 in Wyoming, to see
-          High, Severe and No Travel at work. Not a live forecast.
-        </p>
-      </div>
     </form>
   );
 });

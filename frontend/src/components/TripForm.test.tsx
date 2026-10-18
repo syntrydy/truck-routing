@@ -321,6 +321,15 @@ describe("accessibility", () => {
 describe("the stormy demo", () => {
   const demoButton = () => screen.getByRole("button", { name: "Try the stormy demo" });
 
+  it("comes before the fields of the trip, so that a visitor sees it first", () => {
+    setup();
+
+    const fields = screen.getByRole("combobox", { name: "From" });
+    expect(
+      demoButton().compareDocumentPosition(fields) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("says what it is and that it is not live", () => {
     setup();
 
