@@ -422,7 +422,6 @@ class TestPayloadSize:
         raw = json.dumps(output, separators=(",", ":")).encode()
         compressed = gzip.compress(raw)
 
-        print(f"payload: {len(raw) / 1024:.0f} KB raw, {len(compressed) / 1024:.0f} KB gzipped")
         assert len(compressed) <= 300 * 1024
         assert len(output["heatmap"]["frames"]) == 49
         assert len(output["heatmap"]["points"]) > 100
