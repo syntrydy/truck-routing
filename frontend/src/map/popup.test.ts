@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { checkpoint } from "../test/plan.ts";
 import { buildCheckpointPopup, formatEta } from "./popup.ts";
@@ -16,11 +16,24 @@ function facts(popup: HTMLElement): Record<string, string> {
 describe("formatEta", () => {
   it("is the local time with its zone", () => {
     // 19:00 UTC is 14:00 in Chicago on that date (CDT).
-    expect(formatEta("2026-10-18T19:00:00Z")).toBe("Sun, Oct 18, 2:00 PM CDT");
+    expect(formatEta("2026-10-18T19:00:00Z")).toBe("Sun, Oct 18, 2:00 PM CDT (UTC-05:00)");
   });
 
   it("follows daylight saving", () => {
-    expect(formatEta("2026-11-02T19:00:00Z")).toBe("Mon, Nov 2, 1:00 PM CST");
+    expect(formatEta("2026-11-02T19:00:00Z")).toBe("Mon, Nov 2, 1:00 PM CST (UTC-06:00)");
+  });
+
+  describe("in a zone with no abbreviation", () => {
+    const original = process.env.TZ;
+    afterEach(() => {
+      process.env.TZ = original;
+    });
+
+    it("writes the zone as the slider does, once, as an offset", () => {
+      process.env.TZ = "Africa/Douala";
+
+      expect(formatEta("2026-10-18T19:00:00Z")).toBe("Sun, Oct 18, 8:00 PM UTC+01:00");
+    });
   });
 });
 
@@ -51,7 +64,7 @@ describe("buildCheckpointPopup", () => {
     );
 
     expect(facts(popup)).toEqual({
-      Arrival: "Sun, Oct 18, 2:00 PM CDT",
+      Arrival: "Sun, Oct 18, 2:00 PM CDT (UTC-05:00)",
       Wind: "31.5 mph",
       Gusts: "44 mph",
       Rain: "0.12 in/hr",

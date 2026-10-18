@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { formatFrameTime, formatHoursAhead, frameTime } from "./forecastTime.ts";
+import { formatMoment, formatHoursAhead, frameTime } from "./forecastTime.ts";
 
 describe("frameTime", () => {
   it("is the start plus one hour per frame", () => {
@@ -10,17 +10,17 @@ describe("frameTime", () => {
   });
 });
 
-describe("formatFrameTime", () => {
+describe("formatMoment", () => {
   it("is the local time with its zone and UTC offset", () => {
-    expect(formatFrameTime(new Date("2026-10-18T23:00:00Z"))).toBe("Sun, 6:00 PM CDT (UTC-05:00)");
+    expect(formatMoment(new Date("2026-10-18T23:00:00Z"))).toBe("Sun, 6:00 PM CDT (UTC-05:00)");
   });
 
   it("follows daylight saving", () => {
-    expect(formatFrameTime(new Date("2026-11-02T18:00:00Z"))).toBe("Mon, 12:00 PM CST (UTC-06:00)");
+    expect(formatMoment(new Date("2026-11-02T18:00:00Z"))).toBe("Mon, 12:00 PM CST (UTC-06:00)");
   });
 });
 
-describe("formatFrameTime in a zone with no abbreviation", () => {
+describe("formatMoment in a zone with no abbreviation", () => {
   const original = process.env.TZ;
   afterEach(() => {
     process.env.TZ = original;
@@ -34,19 +34,19 @@ describe("formatFrameTime in a zone with no abbreviation", () => {
   ])("says %s once, as an offset", (zone, expected) => {
     process.env.TZ = zone;
 
-    expect(formatFrameTime(moment)).toBe(expected);
+    expect(formatMoment(moment)).toBe(expected);
   });
 
   it("writes UTC itself once too", () => {
     process.env.TZ = "UTC";
 
-    expect(formatFrameTime(moment)).toBe("Sun, 7:00 PM UTC+00:00");
+    expect(formatMoment(moment)).toBe("Sun, 7:00 PM UTC+00:00");
   });
 });
 
 describe("formatHoursAhead", () => {
   it.each([
-    [0, "at departure"],
+    [0, "+0 h"],
     [1, "+1 h"],
     [48, "+48 h"],
   ])("writes %d as %s", (hour, text) => {
