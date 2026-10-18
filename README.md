@@ -48,7 +48,7 @@ The full specification is in [`docs/SPEC.md`](docs/SPEC.md); the decisions behin
 1. **Routes.** OSRM gives up to three alternatives. If it gives fewer, detours are routed through a point beside the midpoint of the trip. Duplicates and detours more than 40% longer are dropped, and the app says when fewer than three distinct routes exist.
 2. **Travel time.** Each segment takes at least as long as driving it at 65 mph, so a truck is never faster than its limit.
 3. **Checkpoints.** Points are placed every 10, 25 or 50 miles along each route, plus the destination, each with its estimated arrival time.
-4. **Weather at arrival.** Open-Meteo hourly forecasts are fetched for the checkpoints (rounded to 0.1 degrees, in batches). Rain and snow are totals for the hour before, so the hour after the arrival is used; wind is interpolated between the two hours around the arrival.
+4. **Weather at arrival.** Open-Meteo hourly forecasts are fetched for the checkpoints (rounded to 0.1 degrees, in batches); any place Open-Meteo cannot supply is asked of the US National Weather Service. Rain and snow are totals for the hour before, so the hour after the arrival is used; wind is interpolated between the two hours around the arrival.
 5. **Risk.** Wind, rain and snow are classified by the brief's bands, the load rules are applied, and the worst factor sets the checkpoint's level, with reasons. A stretch takes the worse of its two ends.
 6. **Ranking.** Routes are ordered by No Travel miles, Severe miles, High miles, average risk, then duration. The reason names the first criterion that separates the best two.
 7. **Heatmap.** A grid of at most 200 points near the routes is classified for each of the next 48 hours.
@@ -183,7 +183,7 @@ Scaling path: add Redis (`REDIS_URL`) so workers share the cache and limits, the
 
 - Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, basemap by [OpenFreeMap](https://openfreemap.org).
 - Routing by [OSRM](https://project-osrm.org) (and optionally [openrouteservice](https://openrouteservice.org)).
-- Weather data by [Open-Meteo.com](https://open-meteo.com), licensed CC BY 4.0.
+- Weather data by [Open-Meteo.com](https://open-meteo.com), licensed CC BY 4.0, with the [US National Weather Service](https://www.weather.gov/) as a fallback.
 - Place search by [Photon](https://photon.komoot.io) and [Nominatim](https://nominatim.org).
 
 ## License

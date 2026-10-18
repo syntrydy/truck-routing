@@ -938,6 +938,7 @@ class TestFromSettings:
         assert sorted(settings.UPSTREAM_ALLOWED_HOSTS) == [
             "api.open-meteo.com",
             "api.openrouteservice.org",
+            "api.weather.gov",
             "nominatim.openstreetmap.org",
             "photon.komoot.io",
             "router.project-osrm.org",

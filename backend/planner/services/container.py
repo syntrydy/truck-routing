@@ -15,7 +15,7 @@ from planner.infra.http import UpstreamClient, upstream_client_from_settings
 from planner.providers.geocode_chain import build_geocoder
 from planner.providers.protocols import GeocodeProvider
 from planner.providers.routing_chain import build_routing_provider
-from planner.providers.weather_openmeteo import OpenMeteoWeatherProvider
+from planner.providers.weather_chain import build_weather_provider
 from planner.services.observed import ObservedPlanService
 from planner.services.plan import PlanService
 
@@ -44,7 +44,7 @@ def build_container(
         plan_service=ObservedPlanService(
             PlanService(
                 build_routing_provider(client, ors_api_key),
-                OpenMeteoWeatherProvider(client, cache),
+                build_weather_provider(client, cache),
                 max_speed_mph=max_speed_mph,
                 wind_basis=wind_basis,
             ),

@@ -1,0 +1,46 @@
+{
+ "properties": {
+  "updateTime": "2026-10-18T06:46:14+00:00",
+  "validTimes": "2026-10-18T00:00:00+00:00/P8DT1H",
+  "windSpeed": {
+   "uom": "wmoUnit:km_h-1",
+   "values": [
+    {
+     "validTime": "2026-10-18T12:00:00+00:00/PT3H",
+     "value": 72.42048
+    },
+    {
+     "validTime": "2026-10-18T15:00:00+00:00/PT1H",
+     "value": null
+    }
+   ]
+  },
+  "windGust": {
+   "uom": "wmoUnit:km_h-1",
+   "values": [
+    {
+     "validTime": "2026-10-18T12:00:00+00:00/PT3H",
+     "value": 96.56064
+    }
+   ]
+  },
+  "quantitativePrecipitation": {
+   "uom": "wmoUnit:mm",
+   "values": [
+    {
+     "validTime": "2026-10-18T12:00:00+00:00/PT6H",
+     "value": 15.24
+    }
+   ]
+  },
+  "snowfallAmount": {
+   "uom": "wmoUnit:mm",
+   "values": [
+    {
+     "validTime": "2026-10-18T12:00:00+00:00/PT6H",
+     "value": 76.2
+    }
+   ]
+  }
+ }
+}
