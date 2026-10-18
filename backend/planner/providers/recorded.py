@@ -27,9 +27,9 @@ from planner.providers.weather_openmeteo import parse_location
 SOURCE = "demo"
 DEMO_ORIGIN = LatLon(39.7392, -104.9903)
 DEMO_DESTINATION = LatLon(40.7608, -111.8910)
-# Hour 56 of the recording is 2024-01-17 08:00 UTC: a truck leaving Denver then meets the
-# worst wind (about 50 mph sustained) near Laramie about three hours later.
-STORM_START_HOUR = 56
+# Hour 58 of the recording is 2024-01-17 10:00 UTC: a truck leaving Denver then reaches the
+# worst wind (about 50 mph sustained) near Laramie within two hours.
+STORM_START_HOUR = 58
 SECONDS_PER_HOUR = 3_600
 HOURS_PER_DAY = 24
 ROUTES_FILE = "denver_salt_lake_routes.json"
