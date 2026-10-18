@@ -153,6 +153,7 @@ def test_the_schema_lists_nothing_that_does_not_exist(schema: dict[str, Any]) ->
         "/api/health",
         "/api/ready",
         "/api/geocode",
+        "/api/demo",
         "/api/plan",
     }
 
@@ -195,3 +196,14 @@ def test_the_ready_operation_describes_breakers_and_cache(schema: dict[str, Any]
     assert operation["operationId"] == "ready"
     assert set(ready["properties"]) == {"status", "cache", "providers"}
     assert set(ready["required"]) == set(ready["properties"])
+
+
+def test_the_demo_is_documented_with_the_plan_response_and_its_two_parameters(
+    schema: dict[str, Any],
+) -> None:
+    operation = schema["paths"]["/api/demo"]["get"]
+
+    parameters = {parameter["name"] for parameter in operation["parameters"]}
+    ok = operation["responses"]["200"]["content"]["application/json"]["schema"]
+    assert parameters == {"load_lb", "interval_mi"}
+    assert ok == {"$ref": "#/components/schemas/PlanResponse"}

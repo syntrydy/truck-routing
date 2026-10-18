@@ -14,6 +14,8 @@ from planner.services.models import ALLOWED_INTERVALS_MI, PlanBanner, PlanReques
 
 MAX_LABEL_LENGTH = 200
 MAX_LOAD_LB = 200_000
+DEFAULT_DEMO_LOAD_LB = 42_000
+DEFAULT_DEMO_INTERVAL_MI = 25
 PAST_GRACE = timedelta(minutes=15)
 MAX_LEAD = timedelta(days=7)
 
@@ -153,6 +155,17 @@ class PlanRequestSerializer(StrictSerializer):
         if value > now + MAX_LEAD:
             raise serializers.ValidationError("The departure time must be within the next 7 days.")
         return max(value, now)
+
+
+class DemoQuerySerializer(serializers.Serializer[Any]):
+    """The query of ``GET /api/demo``: the trip is fixed, the load and spacing are not."""
+
+    load_lb = serializers.IntegerField(
+        min_value=0, max_value=MAX_LOAD_LB, default=DEFAULT_DEMO_LOAD_LB, help_text="Pounds."
+    )
+    interval_mi = serializers.ChoiceField(
+        choices=ALLOWED_INTERVALS_MI, default=DEFAULT_DEMO_INTERVAL_MI, help_text="Miles."
+    )
 
 
 def parse_plan_request(data: Any, now: datetime) -> PlanRequest:  # noqa: ANN401

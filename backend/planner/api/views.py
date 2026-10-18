@@ -14,6 +14,7 @@ from planner.api.middleware import get_request_id
 from planner.api.presenters import present_plan
 from planner.api.ratelimit import geocode_rate, plan_rate
 from planner.api.serializers import (
+    DemoQuerySerializer,
     ErrorEnvelopeSerializer,
     GeocodeResponseSerializer,
     HealthSerializer,
@@ -30,6 +31,7 @@ from planner.providers.protocols import (
     normalize_query,
 )
 from planner.services.container import get_container
+from planner.services.demo import get_demo_planner
 
 
 def utc_now() -> datetime:
@@ -105,6 +107,40 @@ class PlanView(APIView):
     def post(self, request: Request) -> Response:
         plan_request = parse_plan_request(request.data, utc_now())
         result = get_container().plan_service.plan(plan_request)
+        response = Response(present_plan(result, get_request_id(request)))
+        response["Cache-Control"] = "no-store"
+        return response
+
+
+@method_decorator(
+    ratelimit(group="demo", key="ip", rate=plan_rate, method="GET", block=True), name="get"
+)
+class DemoView(APIView):
+    """A recorded storm on a recorded corridor, planned by the same code as a live trip."""
+
+    @extend_schema(
+        operation_id="demo",
+        summary="Plan the stormy demo trip",
+        description=(
+            "Denver to Salt Lake City by three roads, in a recording of the wind storm of "
+            "17 January 2024 on I-80 in Wyoming, moved in time to start at the request. It is "
+            "planned by the same service as `plan`; only the routes and the weather are "
+            "recorded, and `meta.routing_source` and `meta.weather_source` are `demo`. It needs "
+            "no other service, so it works when the live ones do not."
+        ),
+        parameters=[DemoQuerySerializer],
+        responses={
+            200: PlanResponseSerializer,
+            400: _error("`VALIDATION`: `load_lb` or `interval_mi` is not allowed."),
+            429: _error("`RATE_LIMITED`."),
+        },
+    )
+    def get(self, request: Request) -> Response:
+        query = DemoQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        result = get_demo_planner().plan(
+            query.validated_data["load_lb"], query.validated_data["interval_mi"]
+        )
         response = Response(present_plan(result, get_request_id(request)))
         response["Cache-Control"] = "no-store"
         return response
