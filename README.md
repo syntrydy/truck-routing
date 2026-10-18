@@ -7,7 +7,7 @@ A web app that recommends the safest truck route between two places, based on th
 
 The API is on a free plan and sleeps when idle, so the first request after a quiet period takes up to a minute.
 
-![The app after planning Boulder to Fort Collins: route cards on the left, routes and the risk heatmap on the map, the forecast slider below](docs/images/plan-overview.png)
+![The stormy demo planned: the trip summary, route cards and the "Why this route?" table on the left; three routes with their risk heatmap on the map; the forecast slider below](docs/images/stormy-demo.png)
 
 ## Contents
 
@@ -41,14 +41,16 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 
 ## Walkthrough
 
-![The stormy demo: the fastest road, I-80 through Wyoming, is Severe and No Travel at Laramie and Fort Collins, and the recommended route goes around it](docs/images/stormy-demo.png)
+1. **See it at work first.** On a calm day every route is Low. Press **Try the stormy demo** to plan Denver to Salt Lake City inside a recording of the wind storm of 17 January 2024 on I-80 in Wyoming (see [Stormy demo](#stormy-demo)). The fastest road meets No Travel wind, the other two go around it, and a banner says it is a recording.
+2. **Choose the trip.** Pick two places with the search boxes (they start as Chicago and Denver), then set the departure time, the load in pounds and the checkpoint spacing. Press **Plan trip**.
+3. **Read the routes.** The form folds into a one-line summary of the trip (press **Edit trip** to change it), so all three cards fit on screen. Each card shows the duration, distance, the worst risk level and a bar of how many miles fall in each level. The recommended route is marked, with the reason it won. Messages above the cards say what to know (the demo notice, missing weather, no safe route), and the assumptions sit under them as small print. A "Why this route?" table under the cards lays the ranking out criterion by criterion.
+4. **Open a checkpoint.** Click a dot on the map to see the arrival time, the weather expected at that moment and the reasons for its risk level, for example "Wind 47 mph with 42,000 lb load".
+5. **Move through time.** Drag the forecast slider, or press **Play**, to watch the heatmap and the truck marker change over the 48 hours after departure. Switch the map between **Risk**, **Wind**, **Rain** and **Snow**. With the keyboard, focus the slider and use the arrow keys.
+6. **Compare.** Each route has its own line pattern and letter on the map (A solid, B dashed, C dotted), shown again beside its card. Point at a line to see its summary (name, time, distance and the miles at its worst level), hover a card to light its line, and select a card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
 
-0. **See it at work first.** On a calm day every route is Low. Press **Try the stormy demo** to plan Denver to Salt Lake City inside a recording of the wind storm of 17 January 2024 on I-80 in Wyoming (see [Stormy demo](#stormy-demo)). The fastest road meets No Travel wind, the other two go around it, and a banner says it is a recording.
-1. **Choose the trip.** Pick two places with the search boxes (they start as Chicago and Denver), then set the departure time, the load in pounds and the checkpoint spacing. Press **Plan trip**.
-2. **Read the routes.** The form folds into a one-line summary of the trip (press **Edit trip** to change it), so all three cards fit on screen. Each card shows the duration, distance, the worst risk level and a bar of how many miles fall in each level. The recommended route is marked, with the reason it won. Banners above the cards list assumptions and gaps, such as fewer than three routes or missing weather.
-3. **Open a checkpoint.** Click a dot on the map to see the arrival time, the weather expected at that moment and the reasons for its risk level, for example "Wind 47 mph with 42,000 lb load".
-4. **Move through time.** Drag the forecast slider, or press **Play**, to watch the heatmap and the truck marker change over the 48 hours after departure. Switch the map between **Risk**, **Wind**, **Rain** and **Snow**. With the keyboard, focus the slider and use the arrow keys.
-5. **Compare.** Each route has its own line pattern and letter on the map (A solid, B dashed, C dotted), shown again beside its card. Point at a line to see its summary (name, time, distance and the miles at its worst level), hover a card to light its line, and select a card to move the checkpoints and the truck to that route. A grey level means the forecast is missing there; it is never shown as Low.
+On a phone the map takes the screen, the forecast control is one compact block, and the trip sits in a sheet under it:
+
+<img src="docs/images/phone-demo.png" alt="The stormy demo on a phone: the map with three routes and the heatmap, the forecast controls under it, and a one-line bar for the trip sheet" width="280">
 
 ## Stormy demo
 
@@ -62,10 +64,12 @@ With a 42,000 lb load the fastest road (I-80 through Wyoming) has 100 miles of N
 flowchart LR
   UI[React app on Vercel] -- POST /api/plan --> API
   UI -- GET /api/geocode --> API
+  UI -- GET /api/demo --> API
   subgraph API[Django API on Render]
     V[Views + serializers] --> S[PlanService facade]
     S --> D[domain: pure functions]
     S --> P[providers: adapters]
+    DEMO[demo: recorded storm] --> S
     P --> C[(cache)]
   end
   P --> OSRM
@@ -162,7 +166,7 @@ The hooks run ruff, mypy, prettier, eslint and gitleaks, plus basic file hygiene
 ```bash
 make check                          # everything CI runs
 make be-test ARGS="-k risk"         # a focused backend run
-make fe-e2e                         # the browser test (first: cd frontend && npx playwright install chromium)
+make fe-e2e                         # the browser tests (first: cd frontend && npx playwright install chromium)
 ```
 
 - **The brief's rules, to read beside the brief:** [`backend/tests/unit/test_brief_cases.py`](backend/tests/unit/test_brief_cases.py) is the wind, rain and snow bands, the three load rules, the worst-factor rule, missing weather and the ranking order as plain cases, one line each with the level a truck is told, with a case on both sides of every edge (47 mph with 30,000 lb is Severe, with 30,001 lb it is No Travel). If you read the brief differently, that is the line to challenge.

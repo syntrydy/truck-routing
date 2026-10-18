@@ -2,6 +2,36 @@
 
 All notable changes, generated from the Conventional Commit history.
 
+## [Unreleased]
+
+Changes merged since the first release.
+
+### Features
+
+- add a labeled demo mode with a recorded storm ([#107](https://github.com/syntrydy/truck-routing/pull/107))
+- **web:** fold the form into a summary after planning ([#115](https://github.com/syntrydy/truck-routing/pull/115))
+- **web:** tell routes apart on the map by pattern and letter ([#117](https://github.com/syntrydy/truck-routing/pull/117))
+- **web:** load a lighter basemap ([#119](https://github.com/syntrydy/truck-routing/pull/119))
+- **web:** show a route's summary on the map line ([#125](https://github.com/syntrydy/truck-routing/pull/125))
+- show why a route was recommended, criterion by criterion ([#127](https://github.com/syntrydy/truck-routing/pull/127))
+- **web:** put the stormy demo first, where a visitor sees it ([#131](https://github.com/syntrydy/truck-routing/pull/131))
+- **web:** work well on phones and tablets, and load faster on slow connections ([#133](https://github.com/syntrydy/truck-routing/pull/133))
+- **web:** polish the left panel: one visual language and a clearer trip form ([#135](https://github.com/syntrydy/truck-routing/pull/135))
+
+### Fixes
+
+- **api:** warn about missing weather only where a route is affected ([#105](https://github.com/syntrydy/truck-routing/pull/105))
+- **domain:** drop detours that double back ([#109](https://github.com/syntrydy/truck-routing/pull/109))
+- **web:** show the weather warning once ([#112](https://github.com/syntrydy/truck-routing/pull/112))
+- **web:** say the time zone once in the forecast label ([#113](https://github.com/syntrydy/truck-routing/pull/113))
+- **web:** write times and zones one way everywhere ([#123](https://github.com/syntrydy/truck-routing/pull/123))
+- **web:** colour the heatmap by each point's own risk level ([#121](https://github.com/syntrydy/truck-routing/pull/121))
+
+### Other
+
+- tidy the readme and add a walkthrough ([#102](https://github.com/syntrydy/truck-routing/pull/102))
+- **domain:** the brief's rules as plain cases ([#129](https://github.com/syntrydy/truck-routing/pull/129))
+
 ## [1.0.0] - 2026-10-18
 
 First release.
