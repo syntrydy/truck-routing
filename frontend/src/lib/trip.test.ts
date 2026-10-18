@@ -11,6 +11,7 @@ import {
   parseLocalInput,
   timeZoneLabel,
   toOffsetIso,
+  summarizeTrip,
   toPlanRequest,
   withDemoTrip,
   validateTrip,
@@ -200,5 +201,27 @@ describe("withDemoTrip", () => {
     expect(demo.departure).toBe("2026-10-18T13:20");
     expect(demo.load).toBe("36000");
     expect(demo.interval).toBe(50);
+  });
+});
+
+describe("summarizeTrip", () => {
+  const request = toPlanRequest(valid(), NOW);
+
+  it("is the places by name, the departure, the load and the spacing", () => {
+    expect(request).not.toBeNull();
+    if (request === null) {
+      return;
+    }
+
+    expect(summarizeTrip(request)).toBe("Chicago → Denver · Sun 2:00 PM · 42,000 lb · every 25 mi");
+  });
+
+  it("keeps a label that has no comma whole", () => {
+    if (request === null) {
+      throw new Error("the sample trip is valid");
+    }
+    const odd = { ...request, origin: { ...request.origin, label: "Home" } };
+
+    expect(summarizeTrip(odd)).toMatch(/^Home → Denver/);
   });
 });

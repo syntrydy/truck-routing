@@ -187,6 +187,23 @@ export function toPlanRequest(values: TripValues, now: Date): PlanRequest | null
   };
 }
 
+/** The first part of a place's label: "Denver" for "Denver, Colorado, United States". */
+function shortPlaceName(label: string): string {
+  return label.split(",")[0]?.trim() || label;
+}
+
+/** The trip in one line, for the folded form: `Denver → Salt Lake City · Sun 8:00 PM · …`. */
+export function summarizeTrip(request: PlanRequest): string {
+  const departure = new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(request.departure_at));
+  const route = `${shortPlaceName(request.origin.label)} → ${shortPlaceName(request.destination.label)}`;
+  const load = `${request.load_lb.toLocaleString("en-US")} lb`;
+  return [route, departure, load, `every ${String(request.interval_mi)} mi`].join(" · ");
+}
+
 /** Whether the inputs differ from the ones the shown plan was made for. */
 export function isStale(planned: PlanRequest | null, current: PlanRequest | null): boolean {
   if (planned === null) {

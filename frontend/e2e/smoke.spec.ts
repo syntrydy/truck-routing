@@ -86,7 +86,7 @@ test("the stormy demo shows danger on the fastest road and says it is a recordin
   };
 
   await expect(page.getByText("Demo: a recording, not a live forecast.")).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "To" })).toHaveValue(/^Salt Lake City/);
+  await expect(page.getByText(/^Denver → Salt Lake City · /)).toBeVisible();
   await expect(page.getByRole("heading", { level: 3 })).toHaveCount(3);
   await expect(page.getByText("Recommended", { exact: true })).toHaveCount(1);
 
@@ -95,5 +95,10 @@ test("the stormy demo shows danger on the fastest road and says it is a recordin
   const fastest = [...plan.routes].sort((a, b) => a.duration_s - b.duration_s)[0];
   expect(fastest?.summary.worst_level).toBe("NO_TRAVEL");
   expect(plan.recommended_route_id).not.toBe(fastest?.id);
-  await expect(page.getByText(/No travel/i).first()).toBeVisible();
+  await expect(
+    page
+      .locator(".route-cards")
+      .getByText(/No travel/i)
+      .first(),
+  ).toBeVisible();
 });
