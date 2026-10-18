@@ -6,6 +6,7 @@ from enum import StrEnum
 
 from planner.domain.corridor import CorridorFrame
 from planner.domain.models import Checkpoint, LatLon, RouteScore
+from planner.domain.ranking import Breakdown
 
 ALLOWED_INTERVALS_MI = (10, 25, 50)
 
@@ -82,6 +83,7 @@ class PlanResult:
 
     recommended_route_id: str | None
     recommendation_reason: str | None
+    ranking: Breakdown
     banner: PlanBanner | None
     routes: tuple[PlannedRoute, ...]
     heatmap: Heatmap

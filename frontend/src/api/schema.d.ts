@@ -222,6 +222,7 @@ export interface components {
         PlanResponse: {
             recommended_route_id: string | null;
             recommendation_reason: string | null;
+            ranking: components["schemas"]["Ranking"];
             banner: (components["schemas"]["BannerEnum"] | components["schemas"]["NullEnum"]) | null;
             routes: components["schemas"]["Route"][];
             heatmap: components["schemas"]["Heatmap"];
@@ -236,6 +237,54 @@ export interface components {
             lon: number;
             /** @default  */
             label: string;
+        };
+        /** @description How the routes were ranked: the criteria in the order they are applied. */
+        Ranking: {
+            criteria: components["schemas"]["RankingCriterion"][];
+        };
+        /** @description One criterion of the ranking across the routes. */
+        RankingCriterion: {
+            id: components["schemas"]["RankingCriterionEnum"];
+            label: string;
+            /**
+             * @description Miles, the 0 to 4 risk scale, or seconds.
+             *
+             *     * `mi` - mi
+             *     * `risk` - risk
+             *     * `s` - s
+             */
+            unit: components["schemas"]["RankingUnitEnum"];
+            /** @description Whether this is the first criterion on which the two best routes differ. */
+            decisive: boolean;
+            /** @description Best route first. */
+            values: components["schemas"]["RankingValue"][];
+        };
+        /**
+         * @description * `NO_TRAVEL_MI` - NO_TRAVEL_MI
+         *     * `SEVERE_MI` - SEVERE_MI
+         *     * `HIGH_MI` - HIGH_MI
+         *     * `AVG_RISK` - AVG_RISK
+         *     * `DURATION` - DURATION
+         * @enum {string}
+         */
+        RankingCriterionEnum: "NO_TRAVEL_MI" | "SEVERE_MI" | "HIGH_MI" | "AVG_RISK" | "DURATION";
+        /**
+         * @description * `mi` - mi
+         *     * `risk` - risk
+         *     * `s` - s
+         * @enum {string}
+         */
+        RankingUnitEnum: "mi" | "risk" | "s";
+        /** @description One route's value on a criterion. */
+        RankingValue: {
+            route_id: string;
+            /**
+             * Format: double
+             * @description What the ranking compared; null when unknown (average risk only).
+             */
+            value: number | null;
+            /** @description Whether no route has a better value. */
+            best: boolean;
         };
         /** @description Readiness response. */
         Ready: {

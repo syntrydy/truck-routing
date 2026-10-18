@@ -5,7 +5,14 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from planner.domain.models import RiskLevel, RouteScore
-from planner.domain.ranking import Banner, ScoredRoute, rank_key, rank_routes
+from planner.domain.ranking import (
+    Banner,
+    Criterion,
+    CriterionRow,
+    ScoredRoute,
+    rank_key,
+    rank_routes,
+)
 
 HOUR = 3_600.0
 
@@ -264,3 +271,100 @@ def test_ranking_is_sorted_and_independent_of_input_order(
     else:
         assert first.recommended_route_id == first.ordered[0].route_id
         assert keys[0].no_travel_mi == 0
+
+
+class TestBreakdown:
+    """The criteria in ranking order, each route's value, and where the decision was made."""
+
+    def rows(self, *routes: ScoredRoute) -> dict[Criterion, CriterionRow]:
+        return {row.criterion: row for row in rank_routes(routes).breakdown.rows}
+
+    def test_the_criteria_come_in_the_order_the_ranking_uses_them(self) -> None:
+        breakdown = rank_routes([scored("a"), scored("b")]).breakdown
+
+        assert [row.criterion for row in breakdown.rows] == [
+            Criterion.NO_TRAVEL_MI,
+            Criterion.SEVERE_MI,
+            Criterion.HIGH_MI,
+            Criterion.AVG_RISK,
+            Criterion.DURATION,
+        ]
+
+    def test_values_are_in_the_order_of_the_ranked_routes(self) -> None:
+        worse = scored("b", severe=8.0, avg_risk=2.0, duration_s=2 * HOUR)
+        better = scored("a", severe=2.5, avg_risk=1.0, duration_s=3 * HOUR)
+
+        breakdown = rank_routes([worse, better]).breakdown
+
+        assert breakdown.route_ids == ("a", "b")
+        severe = next(row for row in breakdown.rows if row.criterion is Criterion.SEVERE_MI)
+        assert severe.values == (2.5, 8.0)
+        assert severe.best == (True, False)
+
+    @pytest.mark.parametrize(
+        ("better", "worse", "decisive"),
+        [
+            ({"no_travel": 0.0}, {"no_travel": 5.0}, Criterion.NO_TRAVEL_MI),
+            ({"severe": 2.5}, {"severe": 8.0}, Criterion.SEVERE_MI),
+            ({"high": 2.5}, {"high": 8.0}, Criterion.HIGH_MI),
+            ({"avg_risk": 0.5}, {"avg_risk": 1.5}, Criterion.AVG_RISK),
+            ({"duration_s": HOUR}, {"duration_s": 2 * HOUR}, Criterion.DURATION),
+        ],
+    )
+    def test_the_decisive_row_is_the_first_where_the_best_two_differ(
+        self, better: dict[str, float], worse: dict[str, float], decisive: Criterion
+    ) -> None:
+        result = rank_routes([scored("b", **worse), scored("a", **better)])
+
+        marked = [row.criterion for row in result.breakdown.rows if row.decisive]
+        assert marked == [decisive]
+
+    def test_the_decisive_row_names_the_same_criterion_as_the_reason(self) -> None:
+        result = rank_routes([scored("b", high=8.0), scored("a", high=2.5)])
+
+        assert result.reason is not None
+        assert result.reason.startswith("Fewest High-risk miles")
+        assert [r.criterion for r in result.breakdown.rows if r.decisive] == [Criterion.HIGH_MI]
+
+    def test_a_criterion_after_the_decision_is_not_marked_even_if_it_differs(self) -> None:
+        better = scored("a", severe=1.0, avg_risk=3.0)
+        worse = scored("b", severe=9.0, avg_risk=0.5)
+
+        rows = self.rows(better, worse)
+
+        assert rows[Criterion.SEVERE_MI].decisive
+        assert not rows[Criterion.AVG_RISK].decisive
+
+    def test_nothing_is_decisive_for_identical_routes(self) -> None:
+        breakdown = rank_routes([scored("a"), scored("b")]).breakdown
+
+        assert not any(row.decisive for row in breakdown.rows)
+        assert all(all(row.best) for row in breakdown.rows)
+
+    def test_a_single_route_has_nothing_to_decide(self) -> None:
+        breakdown = rank_routes([scored("a")]).breakdown
+
+        assert breakdown.route_ids == ("a",)
+        assert not any(row.decisive for row in breakdown.rows)
+
+    def test_an_unknown_average_risk_is_none_and_never_best(self) -> None:
+        rows = self.rows(scored("a", avg_risk=None), scored("b", avg_risk=3.0))
+
+        row = rows[Criterion.AVG_RISK]
+        assert row.values == (3.0, None)
+        assert row.best == (True, False)
+
+    def test_values_are_the_rounded_ones_the_ranking_compared(self) -> None:
+        rows = self.rows(scored("a", severe=2.04, avg_risk=1.004), scored("b", severe=2.04))
+
+        assert rows[Criterion.SEVERE_MI].values == (2.0, 2.0)
+        assert rows[Criterion.AVG_RISK].values == (1.0, 1.0)
+
+    def test_there_is_a_breakdown_when_no_route_is_safe(self) -> None:
+        result = rank_routes([scored("a", no_travel=9.0), scored("b", no_travel=3.0)])
+
+        assert result.recommended_route_id is None
+        assert result.breakdown.route_ids == ("b", "a")
+        assert [r.criterion for r in result.breakdown.rows if r.decisive] == [
+            Criterion.NO_TRAVEL_MI
+        ]

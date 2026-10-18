@@ -654,6 +654,9 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "ranking": {
+                        "$ref": "#/components/schemas/Ranking"
+                    },
                     "banner": {
                         "nullable": true,
                         "oneOf": [
@@ -689,6 +692,7 @@
                     "heatmap",
                     "meta",
                     "notes",
+                    "ranking",
                     "recommendation_reason",
                     "recommended_route_id",
                     "routes"
@@ -719,6 +723,103 @@
                 "required": [
                     "lat",
                     "lon"
+                ]
+            },
+            "Ranking": {
+                "type": "object",
+                "description": "How the routes were ranked: the criteria in the order they are applied.",
+                "properties": {
+                    "criteria": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RankingCriterion"
+                        }
+                    }
+                },
+                "required": [
+                    "criteria"
+                ]
+            },
+            "RankingCriterion": {
+                "type": "object",
+                "description": "One criterion of the ranking across the routes.",
+                "properties": {
+                    "id": {
+                        "$ref": "#/components/schemas/RankingCriterionEnum"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RankingUnitEnum"
+                            }
+                        ],
+                        "description": "Miles, the 0 to 4 risk scale, or seconds.\n\n* `mi` - mi\n* `risk` - risk\n* `s` - s"
+                    },
+                    "decisive": {
+                        "type": "boolean",
+                        "description": "Whether this is the first criterion on which the two best routes differ."
+                    },
+                    "values": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RankingValue"
+                        },
+                        "description": "Best route first."
+                    }
+                },
+                "required": [
+                    "decisive",
+                    "id",
+                    "label",
+                    "unit",
+                    "values"
+                ]
+            },
+            "RankingCriterionEnum": {
+                "enum": [
+                    "NO_TRAVEL_MI",
+                    "SEVERE_MI",
+                    "HIGH_MI",
+                    "AVG_RISK",
+                    "DURATION"
+                ],
+                "type": "string",
+                "description": "* `NO_TRAVEL_MI` - NO_TRAVEL_MI\n* `SEVERE_MI` - SEVERE_MI\n* `HIGH_MI` - HIGH_MI\n* `AVG_RISK` - AVG_RISK\n* `DURATION` - DURATION"
+            },
+            "RankingUnitEnum": {
+                "enum": [
+                    "mi",
+                    "risk",
+                    "s"
+                ],
+                "type": "string",
+                "description": "* `mi` - mi\n* `risk` - risk\n* `s` - s"
+            },
+            "RankingValue": {
+                "type": "object",
+                "description": "One route's value on a criterion.",
+                "properties": {
+                    "route_id": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "number",
+                        "format": "double",
+                        "nullable": true,
+                        "description": "What the ranking compared; null when unknown (average risk only)."
+                    },
+                    "best": {
+                        "type": "boolean",
+                        "description": "Whether no route has a better value."
+                    }
+                },
+                "required": [
+                    "best",
+                    "route_id",
+                    "value"
                 ]
             },
             "Ready": {

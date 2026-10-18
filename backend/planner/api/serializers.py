@@ -8,6 +8,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from planner.domain.models import LatLon, RiskLevel
+from planner.domain.ranking import Criterion
 from planner.infra.resilience import BreakerState
 from planner.providers.protocols import MAX_RESULTS, PlaceKind
 from planner.services.models import ALLOWED_INTERVALS_MI, PlanBanner, PlanRequest
@@ -28,6 +29,8 @@ class HealthSerializer(serializers.Serializer[dict[str, str]]):
 
 PLACE_KINDS = [kind.value for kind in PlaceKind]
 BREAKER_STATES = [state.value for state in BreakerState]
+RANKING_CRITERIA = [criterion.value for criterion in Criterion]
+RANKING_UNITS = ["mi", "risk", "s"]
 
 
 class ReadySerializer(serializers.Serializer[Any]):
@@ -275,11 +278,43 @@ class MetaSerializer(serializers.Serializer[Any]):
     request_id = serializers.CharField()
 
 
+class RankingValueSerializer(serializers.Serializer[Any]):
+    """One route's value on a criterion."""
+
+    route_id = serializers.CharField()
+    value = serializers.FloatField(
+        allow_null=True,
+        help_text="What the ranking compared; null when unknown (average risk only).",
+    )
+    best = serializers.BooleanField(help_text="Whether no route has a better value.")
+
+
+class RankingCriterionSerializer(serializers.Serializer[Any]):
+    """One criterion of the ranking across the routes."""
+
+    id = serializers.ChoiceField(choices=RANKING_CRITERIA)
+    label = serializers.CharField()  # type: ignore[assignment]
+    unit = serializers.ChoiceField(
+        choices=RANKING_UNITS, help_text="Miles, the 0 to 4 risk scale, or seconds."
+    )
+    decisive = serializers.BooleanField(
+        help_text="Whether this is the first criterion on which the two best routes differ."
+    )
+    values = RankingValueSerializer(many=True, help_text="Best route first.")
+
+
+class RankingSerializer(serializers.Serializer[Any]):
+    """How the routes were ranked: the criteria in the order they are applied."""
+
+    criteria = RankingCriterionSerializer(many=True)
+
+
 class PlanResponseSerializer(serializers.Serializer[Any]):
     """The response of ``POST /api/plan``."""
 
     recommended_route_id = serializers.CharField(allow_null=True)
     recommendation_reason = serializers.CharField(allow_null=True)
+    ranking = RankingSerializer()
     banner = serializers.ChoiceField(choices=BANNERS, allow_null=True)
     routes = RouteSerializer(many=True)
     heatmap = HeatmapSerializer()

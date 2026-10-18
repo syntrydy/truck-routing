@@ -96,6 +96,9 @@ test("the stormy demo shows danger on the fastest road and says it is a recordin
   const fastest = [...plan.routes].sort((a, b) => a.duration_s - b.duration_s)[0];
   expect(fastest?.summary.worst_level).toBe("NO_TRAVEL");
   expect(plan.recommended_route_id).not.toBe(fastest?.id);
+  // The ranking is laid out, with the deciding row marked.
+  await expect(page.getByText("Why this route?")).toBeVisible();
+  await expect(page.getByRole("row", { name: /decided here/ })).toHaveCount(1);
   await expect(
     page
       .locator(".route-cards")
