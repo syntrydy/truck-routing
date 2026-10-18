@@ -37,7 +37,13 @@ class UpstreamUnavailable(UpstreamError):  # noqa: N818
     """The provider is not serving: circuit open, connection failures, 5xx or 429 (HTTP 503).
 
     Fallback chains (for example OSRM to openrouteservice) switch provider on this error.
+    ``retry_after_s`` is how long the provider asked callers to wait (a 429 with
+    ``Retry-After``), already limited to a sensible maximum.
     """
+
+    def __init__(self, provider: str, message: str, *, retry_after_s: float | None = None) -> None:
+        super().__init__(provider, message)
+        self.retry_after_s = retry_after_s
 
 
 class UpstreamContractError(UpstreamError):

@@ -5,7 +5,9 @@ User-Agent, per-provider timeouts capped by the request deadline, one jittered r
 transient failures, a circuit breaker and a concurrency limit per provider.
 """
 
+import json
 import logging
+import math
 import random
 import threading
 import time
@@ -41,6 +43,9 @@ HTTP_SERVER_ERROR = 500
 HTTP_CLIENT_ERROR = 400
 HTTPS = "https"
 MAX_ERROR_BODY = 2_000
+# A provider may ask for a long wait; waiting longer than this would only burn the request.
+MAX_RETRY_AFTER_S = 10.0
+MAX_REASON_LENGTH = 100
 
 
 Gate = Callable[[Deadline | None], None]
@@ -260,6 +265,8 @@ class UpstreamClient:
         for attempt in range(policy.retries + 1):
             if attempt > 0:
                 delay = self._jitter.uniform(0.0, policy.backoff_base_s * 2 ** (attempt - 1))
+                if last_failure is not None and last_failure.retry_after_s is not None:
+                    delay = max(delay, last_failure.retry_after_s)
                 if deadline is not None and delay >= deadline.remaining():
                     break
                 self._sleep(delay)
@@ -322,7 +329,13 @@ class UpstreamClient:
             state.slots.release()
 
         status = response.status_code
-        if status == HTTP_TOO_MANY_REQUESTS or status >= HTTP_SERVER_ERROR:
+        if status == HTTP_TOO_MANY_REQUESTS:
+            return None, UpstreamUnavailable(
+                policy.name,
+                f"HTTP {status}{_rate_limit_reason(response)}",
+                retry_after_s=_retry_after_s(response),
+            )
+        if status >= HTTP_SERVER_ERROR:
             return None, UpstreamUnavailable(policy.name, f"HTTP {status}")
         if status >= HTTP_CLIENT_ERROR or response.is_redirect:
             msg = f"HTTP {status}"
@@ -330,6 +343,29 @@ class UpstreamClient:
                 policy.name, msg, status=status, body=response.text[:MAX_ERROR_BODY]
             )
         return response, None
+
+
+def _retry_after_s(response: httpx.Response) -> float | None:
+    """The seconds a 429 asked us to wait, at most ``MAX_RETRY_AFTER_S``; ``None`` if not given.
+
+    Only the number-of-seconds form is read; a date (or anything else) is ignored.
+    """
+    try:
+        seconds = float(response.headers.get("Retry-After", ""))
+    except ValueError:
+        return None
+    if not math.isfinite(seconds) or seconds < 0:
+        return None
+    return min(seconds, MAX_RETRY_AFTER_S)
+
+
+def _rate_limit_reason(response: httpx.Response) -> str:
+    """The provider's own words for a 429 (``: <reason>``), so the log says which limit was hit."""
+    try:
+        reason = json.loads(response.text).get("reason")
+    except (ValueError, AttributeError):
+        return ""
+    return f": {reason[:MAX_REASON_LENGTH]}" if isinstance(reason, str) else ""
 
 
 def _call_timeout(policy: ProviderPolicy, deadline: Deadline | None) -> float | None:
