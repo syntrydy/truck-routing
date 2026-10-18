@@ -76,7 +76,13 @@ export function ForecastSlider({
             </label>
           ))}
         </fieldset>
-        <HeatmapLegend variable={variable} />
+        <div className="forecast__key">
+          <HeatmapLegend variable={variable} />
+          <p className="forecast__note">
+            Map colours show the forecast at the time above. The dots on the routes show the weather
+            when the truck gets there.
+          </p>
+        </div>
       </div>
     </div>
   );
