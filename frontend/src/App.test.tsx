@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ApiError } from "./api/errors.ts";
 import { apiWrapper, stubClient } from "./api/testing.tsx";
 import type { ApiClient } from "./api/client.ts";
 import { App } from "./App.tsx";
@@ -246,7 +247,6 @@ describe("App", () => {
   });
 
   it("shows why a trip could not be planned", async () => {
-    const { ApiError } = await import("./api/errors.ts");
     const plan = vi.fn<ApiClient["plan"]>(() =>
       Promise.reject(new ApiError({ code: "NO_ROUTE", message: "No drivable route", status: 422 })),
     );
@@ -265,5 +265,176 @@ describe("App", () => {
     });
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No drivable route");
+  });
+});
+
+describe("states", () => {
+  async function chooseTrip(user: ReturnType<typeof userEvent.setup>) {
+    for (const [name, typed] of [
+      ["From", "chicago"],
+      ["To", "denver"],
+    ] as const) {
+      await user.type(screen.getByRole("combobox", { name }), typed);
+      await screen.findByRole("option");
+      await user.keyboard("{ArrowDown}{Enter}");
+    }
+  }
+
+  it("explains what to do before a first plan, and stops once there is one", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    expect(screen.getByText(/Choose where you start and where you are going/)).toBeInTheDocument();
+
+    await chooseTrip(user);
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+    await screen.findByRole("button", { name: "Route R1" });
+
+    expect(screen.queryByText(/Choose where you start/)).not.toBeInTheDocument();
+  });
+
+  it("shows progress while the plan is worked out", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => new Promise(() => undefined));
+    const { user } = renderApp({ plan });
+    await chooseTrip(user);
+
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    expect(await screen.findByText("Planning your trip…")).toBeInTheDocument();
+    expect(screen.queryByText(/Choose where you start/)).not.toBeInTheDocument();
+  });
+
+  it("offers to try again after a failure, and plans the same trip again", async () => {
+    const plan = vi
+      .fn<ApiClient["plan"]>()
+      .mockRejectedValueOnce(
+        new ApiError({
+          code: "UPSTREAM_UNAVAILABLE",
+          message: "down",
+          status: 503,
+          requestId: "req-5",
+        }),
+      )
+      .mockResolvedValue(samplePlan());
+    const { user } = renderApp({ plan });
+    await chooseTrip(user);
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("not available right now");
+    expect(alert).toHaveTextContent("Reference: req-5");
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    await screen.findByRole("button", { name: "Route R1" });
+    expect(plan).toHaveBeenCalledTimes(2);
+    expect(plan.mock.calls[1]?.[0]).toEqual(plan.mock.calls[0]?.[0]);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("puts focus on the results when a plan arrives, and announces it", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    await chooseTrip(user);
+
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    const heading = await screen.findByRole("heading", { name: "Routes" });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    expect(screen.getByText(/Planned 2 routes\. Route R1 is recommended\./)).toBeInTheDocument();
+  });
+
+  it("folds the sheet away when a plan arrives, with the best route on its bar", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
+    const { user } = renderApp({ plan });
+    expect(screen.getByRole("button", { name: /Trip details/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    await chooseTrip(user);
+
+    await user.click(screen.getByRole("button", { name: "Plan trip" }));
+
+    const bar = await screen.findByRole("button", { name: /Route R1 · 1 h 40 min/ });
+    expect(bar).toHaveAttribute("aria-expanded", "false");
+    await user.click(bar);
+    expect(bar).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("opens the sheet again when planning fails", async () => {
+    const plan = vi.fn<ApiClient["plan"]>(() =>
+      Promise.reject(new ApiError({ code: "NO_ROUTE", message: "x", status: 422 })),
+    );
+    const { user } = renderApp({ plan });
+    await chooseTrip(user);
+    await user.click(screen.getByRole("button", { name: /Trip details/ })); // the person closed it
+    expect(screen.getByRole("button", { name: /Trip details/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Plan trip", hidden: true }));
+
+    await screen.findByRole("alert");
+    expect(screen.getByRole("button", { name: /Trip details/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+});
+
+describe("a slow or absent server", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("says nothing before three seconds, then that the server is waking up", async () => {
+    renderApp({ health: () => new Promise(() => undefined) });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2999);
+    });
+    expect(screen.queryByText("Waking up the server…")).not.toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(screen.getByText("Waking up the server…")).toBeInTheDocument();
+  });
+
+  it("takes the message away when the server answers", async () => {
+    let answer: (value: { status: string }) => void = () => undefined;
+    renderApp({
+      health: () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4000);
+    });
+    expect(screen.getByText("Waking up the server…")).toBeInTheDocument();
+
+    await act(async () => {
+      answer({ status: "ok" });
+      await vi.advanceTimersByTimeAsync(10);
+    });
+
+    expect(screen.queryByText("Waking up the server…")).not.toBeInTheDocument();
+  });
+
+  it("says so when the server never answers", async () => {
+    renderApp({
+      health: () => Promise.reject(new ApiError({ code: "NETWORK", message: "no", status: 0 })),
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20_000);
+    });
+
+    expect(screen.getByText(/The server is not answering/)).toBeInTheDocument();
   });
 });
