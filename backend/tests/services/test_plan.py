@@ -7,7 +7,7 @@ from planner.domain.geometry import METERS_PER_MILE, destination_point, haversin
 from planner.domain.models import LatLon, RiskLevel
 from planner.domain.risk import WindBasis
 from planner.providers.protocols import ProviderRoute, rounded_point
-from planner.services.models import PlanRequest
+from planner.services.models import PlanBanner, PlanRequest
 from planner.services.plan import PlanService
 from tests.infra.fakes import FakeClock
 from tests.services.stubs import START, StubRouting, StubWeather, route
@@ -310,3 +310,58 @@ class TestHeatmap:
 
         assert max(heatmap.frames[0].risk) == int(RiskLevel.SEVERE)
         assert min(heatmap.frames[0].risk) == int(RiskLevel.LOW)
+
+
+class TestWeatherGaps:
+    """Missing weather matters where a route passes; on the map alone it is only a note."""
+
+    def checkpoint_places(self, routes: list[ProviderRoute]) -> set[LatLon]:
+        calm = make_service(StubRouting(routes), StubWeather()).plan(request_for(routes[0]))
+        return {rounded_point(c.location) for r in calm.routes for c in r.checkpoints}
+
+    def test_gaps_only_among_the_heatmap_cells_raise_no_banner(self) -> None:
+        routes = three_routes()
+        on_routes = self.checkpoint_places(routes)
+        weather = StubWeather(lambda place: {} if place in on_routes else None)
+        service = make_service(StubRouting(routes), weather)
+
+        result = service.plan(request_for(routes[0]))
+
+        assert result.banner is None
+        assert all(not r.score.low_confidence for r in result.routes)
+        assert {c.level for r in result.routes for c in r.checkpoints} == {RiskLevel.LOW}
+        [note] = [n for n in result.notes if "weather map" in n]
+        assert "have no forecast" in note
+
+    def test_a_gap_at_a_checkpoint_raises_the_banner_and_counts_only_checkpoints(self) -> None:
+        routes = three_routes()
+        on_routes = sorted(self.checkpoint_places(routes), key=lambda p: (p.lat, p.lon))
+        lost = on_routes[0]
+        weather = StubWeather(lambda place: None if place == lost else {})
+        service = make_service(StubRouting(routes), weather)
+
+        result = service.plan(request_for(routes[0]))
+
+        assert result.banner is PlanBanner.WEATHER_UNAVAILABLE
+        assert "Weather is unavailable for 1 location; their risk is shown as unknown" in (
+            result.notes
+        )
+        assert not any("weather map" in n for n in result.notes)
+
+    def test_no_weather_at_all_counts_checkpoints_and_cells_apart(self) -> None:
+        routes = three_routes()
+        on_routes = self.checkpoint_places(routes)
+        service = make_service(StubRouting(routes), StubWeather(lambda place: None))
+
+        result = service.plan(request_for(routes[0]))
+
+        cells = {rounded_point(p) for p in result.heatmap.points} - on_routes
+        assert result.banner is PlanBanner.WEATHER_UNAVAILABLE
+        assert (
+            f"Weather is unavailable for {len(on_routes)} locations; their risk is shown as unknown"
+            in (result.notes)
+        )
+        assert (
+            f"{len(cells)} cells of the weather map have no forecast; they are shown in grey"
+            in (result.notes)
+        )

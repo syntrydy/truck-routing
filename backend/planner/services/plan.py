@@ -4,6 +4,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from time import monotonic as default_monotonic
+from typing import NamedTuple
 
 from planner.domain.corridor import FRAME_COUNT, build_frames, build_grid
 from planner.domain.geometry import METERS_PER_MILE, cumulative_distances_m, haversine_m
@@ -112,7 +113,8 @@ class PlanService:
             )
 
         ranked = _in_order(planned, [route.route_id for route in recommendation.ordered])
-        banner = _banner(recommendation.banner, weather)
+        gaps = _weather_gaps(drafts, grid.points, weather)
+        banner = _banner(recommendation.banner, gaps)
         return PlanResult(
             recommended_route_id=recommendation.recommended_route_id,
             recommendation_reason=recommendation.reason,
@@ -127,7 +129,7 @@ class PlanService:
                 f"ETAs assume continuous driving at ≤ {self._max_speed_mph:g} mph",
                 *selection.notes,
                 *notes,
-                *_weather_notes(weather),
+                *_weather_notes(weather, gaps),
                 *_load_notes(request),
             ),
             meta=PlanMeta(
@@ -250,11 +252,34 @@ def _in_order(routes: Sequence[PlannedRoute], ids: Sequence[str]) -> list[Planne
     return [by_id[route_id] for route_id in ids]
 
 
-def _banner(ranking: Banner | None, weather: WeatherResult) -> PlanBanner | None:
-    """No safe route outranks missing weather: known danger is the more important warning."""
+class _WeatherGaps(NamedTuple):
+    """Places without weather: where a route has a checkpoint, and heatmap cells off the routes."""
+
+    checkpoints: int
+    cells: int
+
+
+def _weather_gaps(
+    drafts: Sequence[_Draft], grid: Sequence[LatLon], weather: WeatherResult
+) -> _WeatherGaps:
+    """Count each place once, as a checkpoint place if any route has a checkpoint there."""
+    on_routes = {rounded_point(cp.location) for draft in drafts for cp in draft.checkpoints}
+    off_routes = {rounded_point(point) for point in grid} - on_routes
+
+    def lacking(places: set[LatLon]) -> int:
+        return sum(1 for place in places if weather.series.get(place) is None)
+
+    return _WeatherGaps(checkpoints=lacking(on_routes), cells=lacking(off_routes))
+
+
+def _banner(ranking: Banner | None, gaps: _WeatherGaps) -> PlanBanner | None:
+    """No safe route outranks missing weather: known danger is the more important warning.
+
+    Only a gap at a checkpoint warns: a gap among the map's cells changes no route's levels.
+    """
     if ranking is Banner.NO_SAFE_ROUTE:
         return PlanBanner.NO_SAFE_ROUTE
-    if weather.missing > 0:
+    if gaps.checkpoints > 0:
         return PlanBanner.WEATHER_UNAVAILABLE
     return None
 
@@ -266,15 +291,21 @@ def _snap_note(snap_distance_m: float) -> str:
     )
 
 
-def _weather_notes(weather: WeatherResult) -> list[str]:
+def _weather_notes(weather: WeatherResult, gaps: _WeatherGaps) -> list[str]:
     notes = []
     if weather.stale:
         notes.append("Weather data may be out of date because the forecast service is unavailable")
-    if weather.missing:
-        places = "location" if weather.missing == 1 else "locations"
+    if gaps.checkpoints:
+        places = "location" if gaps.checkpoints == 1 else "locations"
         notes.append(
-            f"Weather is unavailable for {weather.missing} {places}; their risk is shown as unknown"
+            f"Weather is unavailable for {gaps.checkpoints} {places}; "
+            "their risk is shown as unknown"
         )
+    if gaps.cells:
+        subject = (
+            "cell of the weather map has" if gaps.cells == 1 else "cells of the weather map have"
+        )
+        notes.append(f"{gaps.cells} {subject} no forecast; they are shown in grey")
     return notes
 
 
