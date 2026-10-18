@@ -342,11 +342,15 @@ def _call_timeout(policy: ProviderPolicy, deadline: Deadline | None) -> float | 
     return min(policy.timeout_s, remaining)
 
 
-def upstream_client_from_settings() -> UpstreamClient:
-    """Build the client from ``UPSTREAM_USER_AGENT`` and ``UPSTREAM_ALLOWED_HOSTS``."""
+def upstream_client_from_settings(http_client: httpx.Client | None = None) -> UpstreamClient:
+    """Build the client from ``UPSTREAM_USER_AGENT`` and ``UPSTREAM_ALLOWED_HOSTS``.
+
+    ``http_client`` replaces the network, for the recorded responses of fixture mode.
+    """
     return UpstreamClient(
         default_policies(),
         settings.UPSTREAM_ALLOWED_HOSTS,
         settings.UPSTREAM_USER_AGENT,
+        http_client=http_client,
         gates={"osrm": _OSRM_SPACING, "nominatim": _NOMINATIM_SPACING},
     )

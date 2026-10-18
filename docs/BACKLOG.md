@@ -154,7 +154,7 @@ Conventions: titles follow Conventional Commits; labels are `type:*` and `area:*
 
 ## M5 — Delivery
 
-- [ ] **B-35 test(e2e): Playwright smoke test** — `type:test` `area:frontend`
+- [x] **B-35 test(e2e): Playwright smoke test** — #80 — `type:test` `area:frontend`
   - Backend in fixture mode (`PROVIDERS_MODE=fixtures` serving recorded responses); test plans a trip, sees 3 routes, opens a checkpoint popup, moves slider. Runs in CI.
   - AC: green in CI; fixture mode impossible to enable when `DEBUG=False` unless explicitly allowed.
 
