@@ -68,6 +68,7 @@ class TestShape:
         assert list(body) == [
             "recommended_route_id",
             "recommendation_reason",
+            "ranking",
             "banner",
             "routes",
             "heatmap",
@@ -151,6 +152,63 @@ class TestShape:
         assert serializer.is_valid(), serializer.errors
         assert stormy["banner"] == "NO_SAFE_ROUTE"
         assert stormy["recommended_route_id"] is None
+
+
+class TestRanking:
+    """The table behind the recommendation, as the API sends it."""
+
+    def test_it_lists_the_five_criteria_in_ranking_order_with_units(
+        self, body: dict[str, Any]
+    ) -> None:
+        criteria = body["ranking"]["criteria"]
+
+        assert [(c["id"], c["label"], c["unit"]) for c in criteria] == [
+            ("NO_TRAVEL_MI", "No Travel miles", "mi"),
+            ("SEVERE_MI", "Severe miles", "mi"),
+            ("HIGH_MI", "High-risk miles", "mi"),
+            ("AVG_RISK", "Average risk", "risk"),
+            ("DURATION", "Travel time", "s"),
+        ]
+
+    def test_every_criterion_has_a_value_for_each_route_best_route_first(
+        self, body: dict[str, Any]
+    ) -> None:
+        ranked_ids = [route["id"] for route in body["routes"]]
+
+        for criterion in body["ranking"]["criteria"]:
+            assert [v["route_id"] for v in criterion["values"]] == ranked_ids
+
+    @pytest.mark.parametrize(
+        ("winds", "criterion", "reason_start"),
+        [
+            # Two routes run into the storm, one does not: the best two differ on Severe miles.
+            ({40.0: 50.0, 40.2: 50.0}, "SEVERE_MI", "Fewest Severe miles"),
+            # Only the middle route does: the two calm ones differ on time alone.
+            ({40.0: 50.0}, "DURATION", "Same risk profile and the fastest"),
+        ],
+    )
+    def test_the_decisive_criterion_is_the_one_the_reason_names(
+        self, winds: dict[float, float], criterion: str, reason_start: str
+    ) -> None:
+        stormy = plan(
+            three_routes(),
+            StubWeather(lambda place: {"wind": winds[place.lat]} if place.lat in winds else {}),
+        )
+
+        body = present_plan(stormy, "r")
+
+        decisive = [c["id"] for c in body["ranking"]["criteria"] if c["decisive"]]
+        assert decisive == [criterion]
+        assert body["recommendation_reason"].startswith(reason_start)
+
+    def test_it_is_valid_for_the_schema_with_an_unknown_average_risk(self) -> None:
+        unknown = present_plan(plan(three_routes(), StubWeather(lambda place: None)), "r")
+        serializer = PlanResponseSerializer(data=unknown)
+
+        assert serializer.is_valid(), serializer.errors
+        average = next(c for c in unknown["ranking"]["criteria"] if c["id"] == "AVG_RISK")
+        assert {v["value"] for v in average["values"]} == {None}
+        assert not any(v["best"] is False for v in average["values"])
 
 
 class TestValues:

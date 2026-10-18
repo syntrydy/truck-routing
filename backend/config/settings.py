@@ -163,5 +163,7 @@ SPECTACULAR_SETTINGS = {
         "BannerEnum": "planner.api.serializers.BANNERS",
         "PlaceKindEnum": "planner.api.serializers.PLACE_KINDS",
         "BreakerStateEnum": "planner.api.serializers.BREAKER_STATES",
+        "RankingCriterionEnum": "planner.api.serializers.RANKING_CRITERIA",
+        "RankingUnitEnum": "planner.api.serializers.RANKING_UNITS",
     },
 }

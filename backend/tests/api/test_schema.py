@@ -130,6 +130,7 @@ def test_the_response_has_the_documented_top_level_fields(schema: dict[str, Any]
     assert set(properties) == {
         "recommended_route_id",
         "recommendation_reason",
+        "ranking",
         "banner",
         "routes",
         "heatmap",
@@ -207,3 +208,22 @@ def test_the_demo_is_documented_with_the_plan_response_and_its_two_parameters(
     ok = operation["responses"]["200"]["content"]["application/json"]["schema"]
     assert parameters == {"load_lb", "interval_mi"}
     assert ok == {"$ref": "#/components/schemas/PlanResponse"}
+
+
+def test_the_ranking_is_documented_as_criteria_with_a_value_for_each_route(
+    schema: dict[str, Any],
+) -> None:
+    schemas = schema["components"]["schemas"]
+
+    criterion = schemas["RankingCriterion"]["properties"]
+    assert list(criterion) == ["id", "label", "unit", "decisive", "values"]
+    assert schemas["RankingCriterionEnum"]["enum"] == [
+        "NO_TRAVEL_MI",
+        "SEVERE_MI",
+        "HIGH_MI",
+        "AVG_RISK",
+        "DURATION",
+    ]
+    assert schemas["RankingUnitEnum"]["enum"] == ["mi", "risk", "s"]
+    assert set(schemas["RankingValue"]["properties"]) == {"route_id", "value", "best"}
+    assert schemas["RankingValue"]["properties"]["value"]["nullable"] is True

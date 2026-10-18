@@ -118,6 +118,7 @@ class PlanService:
         return PlanResult(
             recommended_route_id=recommendation.recommended_route_id,
             recommendation_reason=recommendation.reason,
+            ranking=recommendation.breakdown,
             banner=banner,
             routes=tuple(replace(route, rank=rank) for rank, route in enumerate(ranked, 1)),
             heatmap=Heatmap(

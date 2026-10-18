@@ -11,6 +11,7 @@ from typing import Any
 
 from planner.domain.geometry import simplify
 from planner.domain.models import Checkpoint, LatLon, RiskLevel
+from planner.domain.ranking import Breakdown, Criterion
 from planner.services.models import Heatmap, PlannedRoute, PlanResult
 
 GEOMETRY_TOLERANCE_M = 50.0
@@ -21,6 +22,15 @@ WIND_DECIMALS = 1
 PRECIPITATION_DECIMALS = 3
 RISK_DECIMALS = 2
 KNOWN_LEVELS = tuple(level for level in RiskLevel if level is not RiskLevel.UNKNOWN)
+# What each ranking criterion is called to a person, and its unit: miles, the 0 to 4 risk scale,
+# or seconds.
+CRITERION_LABELS: dict[Criterion, tuple[str, str]] = {
+    Criterion.NO_TRAVEL_MI: ("No Travel miles", "mi"),
+    Criterion.SEVERE_MI: ("Severe miles", "mi"),
+    Criterion.HIGH_MI: ("High-risk miles", "mi"),
+    Criterion.AVG_RISK: ("Average risk", "risk"),
+    Criterion.DURATION: ("Travel time", "s"),
+}
 
 
 def present_plan(result: PlanResult, request_id: str) -> dict[str, Any]:
@@ -28,6 +38,7 @@ def present_plan(result: PlanResult, request_id: str) -> dict[str, Any]:
     return {
         "recommended_route_id": result.recommended_route_id,
         "recommendation_reason": result.recommendation_reason,
+        "ranking": _ranking(result.ranking),
         "banner": result.banner.value if result.banner else None,
         "routes": [_route(route) for route in result.routes],
         "heatmap": _heatmap(result.heatmap),
@@ -39,6 +50,27 @@ def present_plan(result: PlanResult, request_id: str) -> dict[str, Any]:
             "generated_at": _time(result.meta.generated_at),
             "request_id": request_id,
         },
+    }
+
+
+def _ranking(ranking: Breakdown) -> dict[str, Any]:
+    """The criteria in ranking order, each with every route's value, best first."""
+    return {
+        "criteria": [
+            {
+                "id": row.criterion.value,
+                "label": CRITERION_LABELS[row.criterion][0],
+                "unit": CRITERION_LABELS[row.criterion][1],
+                "decisive": row.decisive,
+                "values": [
+                    {"route_id": route_id, "value": value, "best": best}
+                    for route_id, value, best in zip(
+                        ranking.route_ids, row.values, row.best, strict=True
+                    )
+                ],
+            }
+            for row in ranking.rows
+        ]
     }
 
 
