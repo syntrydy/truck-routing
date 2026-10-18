@@ -2,37 +2,7 @@
 
 All notable changes, generated from the Conventional Commit history.
 
-## [Unreleased]
-
-Changes merged since the first release.
-
-### Features
-
-- add a labeled demo mode with a recorded storm ([#107](https://github.com/syntrydy/truck-routing/pull/107))
-- **web:** fold the form into a summary after planning ([#115](https://github.com/syntrydy/truck-routing/pull/115))
-- **web:** tell routes apart on the map by pattern and letter ([#117](https://github.com/syntrydy/truck-routing/pull/117))
-- **web:** load a lighter basemap ([#119](https://github.com/syntrydy/truck-routing/pull/119))
-- **web:** show a route's summary on the map line ([#125](https://github.com/syntrydy/truck-routing/pull/125))
-- show why a route was recommended, criterion by criterion ([#127](https://github.com/syntrydy/truck-routing/pull/127))
-- **web:** put the stormy demo first, where a visitor sees it ([#131](https://github.com/syntrydy/truck-routing/pull/131))
-- **web:** work well on phones and tablets, and load faster on slow connections ([#133](https://github.com/syntrydy/truck-routing/pull/133))
-- **web:** polish the left panel: one visual language and a clearer trip form ([#135](https://github.com/syntrydy/truck-routing/pull/135))
-
-### Fixes
-
-- **api:** warn about missing weather only where a route is affected ([#105](https://github.com/syntrydy/truck-routing/pull/105))
-- **domain:** drop detours that double back ([#109](https://github.com/syntrydy/truck-routing/pull/109))
-- **web:** show the weather warning once ([#112](https://github.com/syntrydy/truck-routing/pull/112))
-- **web:** say the time zone once in the forecast label ([#113](https://github.com/syntrydy/truck-routing/pull/113))
-- **web:** write times and zones one way everywhere ([#123](https://github.com/syntrydy/truck-routing/pull/123))
-- **web:** colour the heatmap by each point's own risk level ([#121](https://github.com/syntrydy/truck-routing/pull/121))
-
-### Other
-
-- tidy the readme and add a walkthrough ([#102](https://github.com/syntrydy/truck-routing/pull/102))
-- **domain:** the brief's rules as plain cases ([#129](https://github.com/syntrydy/truck-routing/pull/129))
-
-## [1.0.0] - 2026-10-18
+## [1.0.0] - 2026-10-19
 
 First release.
 
@@ -67,12 +37,27 @@ First release.
 - **web:** loading, cold-start, error and mobile states ([#77](https://github.com/syntrydy/truck-routing/pull/77))
 - **providers:** add a National Weather Service weather fallback ([#95](https://github.com/syntrydy/truck-routing/pull/95))
 - **web:** start the trip form with a default origin and destination ([#97](https://github.com/syntrydy/truck-routing/pull/97))
+- add a labeled demo mode with a recorded storm ([#107](https://github.com/syntrydy/truck-routing/pull/107))
+- **web:** fold the form into a summary after planning ([#115](https://github.com/syntrydy/truck-routing/pull/115))
+- **web:** tell routes apart on the map by pattern and letter ([#117](https://github.com/syntrydy/truck-routing/pull/117))
+- **web:** load a lighter basemap ([#119](https://github.com/syntrydy/truck-routing/pull/119))
+- **web:** show a route's summary on the map line ([#125](https://github.com/syntrydy/truck-routing/pull/125))
+- show why a route was recommended, criterion by criterion ([#127](https://github.com/syntrydy/truck-routing/pull/127))
+- **web:** put the stormy demo first, where a visitor sees it ([#131](https://github.com/syntrydy/truck-routing/pull/131))
+- **web:** work well on phones and tablets, and load faster on slow connections ([#133](https://github.com/syntrydy/truck-routing/pull/133))
+- **web:** polish the left panel: one visual language and a clearer trip form ([#135](https://github.com/syntrydy/truck-routing/pull/135))
 
 ### Fixes
 
 - **deploy:** use the host Render assigned to the API ([#85](https://github.com/syntrydy/truck-routing/pull/85))
 - **deps:** declare httpx as a runtime dependency ([#89](https://github.com/syntrydy/truck-routing/pull/89))
 - **providers:** log lost weather batches and honour Retry-After ([#91](https://github.com/syntrydy/truck-routing/pull/91))
+- **api:** warn about missing weather only where a route is affected ([#105](https://github.com/syntrydy/truck-routing/pull/105))
+- **domain:** drop detours that double back ([#109](https://github.com/syntrydy/truck-routing/pull/109))
+- **web:** show the weather warning once ([#112](https://github.com/syntrydy/truck-routing/pull/112))
+- **web:** say the time zone once in the forecast label ([#113](https://github.com/syntrydy/truck-routing/pull/113))
+- **web:** write times and zones one way everywhere ([#123](https://github.com/syntrydy/truck-routing/pull/123))
+- **web:** colour the heatmap by each point's own risk level ([#121](https://github.com/syntrydy/truck-routing/pull/121))
 
 ### Performance
 
@@ -83,11 +68,15 @@ First release.
 - write the README and the decision records ([#87](https://github.com/syntrydy/truck-routing/pull/87))
 - **deploy:** add live links and deployment notes ([#93](https://github.com/syntrydy/truck-routing/pull/93))
 - **backlog:** mark B-36 done ([#98](https://github.com/syntrydy/truck-routing/pull/98))
+- tidy the readme and add a walkthrough ([#102](https://github.com/syntrydy/truck-routing/pull/102))
+- bring the README and the changelog up to date ([#137](https://github.com/syntrydy/truck-routing/pull/137))
+- link the video walkthrough in the README ([#139](https://github.com/syntrydy/truck-routing/pull/139))
 
 ### Tests
 
 - pin the sampling, grid, overlap and rain-precision boundaries ([#55](https://github.com/syntrydy/truck-routing/pull/55))
 - **e2e:** add a browser smoke test against recorded data ([#81](https://github.com/syntrydy/truck-routing/pull/81))
+- **domain:** the brief's rules as plain cases ([#129](https://github.com/syntrydy/truck-routing/pull/129))
 
 ### Continuous integration
 
