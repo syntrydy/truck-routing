@@ -2,6 +2,9 @@ import { memo } from "react";
 
 import type { PlanResponse } from "../api/types.ts";
 
+/** The start of the note about places without weather; the weather banner says the same. */
+const MISSING_WEATHER_NOTE = "Weather is unavailable for ";
+
 /** What the API reports as the weather source of the recorded demo. */
 const DEMO_SOURCE = "demo";
 
@@ -11,6 +14,11 @@ interface PlanBannersProps {
 
 /** What to warn about before the routes: the plan's banner, then its notes. */
 export const PlanBanners = memo(function PlanBanners({ plan }: PlanBannersProps) {
+  // The weather banner already says that some places have no weather, so its note is left out.
+  const notes =
+    plan.banner === "WEATHER_UNAVAILABLE"
+      ? plan.notes.filter((note) => !note.startsWith(MISSING_WEATHER_NOTE))
+      : plan.notes;
   return (
     <div className="banners">
       {plan.meta.weather_source === DEMO_SOURCE && (
@@ -32,9 +40,9 @@ export const PlanBanners = memo(function PlanBanners({ plan }: PlanBannersProps)
           not as low, so treat those stretches with care.
         </p>
       )}
-      {plan.notes.length > 0 && (
+      {notes.length > 0 && (
         <ul className="banner banner--info" aria-label="Notes about this plan">
-          {plan.notes.map((note) => (
+          {notes.map((note) => (
             <li key={note}>{note}</li>
           ))}
         </ul>

@@ -49,6 +49,42 @@ describe("PlanBanners", () => {
     expect(screen.queryByText(/Demo:/)).not.toBeInTheDocument();
   });
 
+  it("does not repeat the weather banner as a note", () => {
+    const repeated = "Weather is unavailable for 3 locations; their risk is shown as unknown";
+    render(
+      <PlanBanners
+        plan={planWith({
+          banner: "WEATHER_UNAVAILABLE",
+          notes: ["ETAs assume continuous driving at ≤ 65 mph", repeated],
+        })}
+      />,
+    );
+
+    expect(screen.getByText("Weather is unavailable for some places.")).toBeInTheDocument();
+    expect(screen.queryByText(repeated)).not.toBeInTheDocument();
+    expect(screen.getByText("ETAs assume continuous driving at ≤ 65 mph")).toBeInTheDocument();
+  });
+
+  it("keeps the missing-weather note when another banner is shown", () => {
+    const missing = "Weather is unavailable for 1 location; their risk is shown as unknown";
+    render(<PlanBanners plan={planWith({ banner: "NO_SAFE_ROUTE", notes: [missing] })} />);
+
+    expect(screen.getByText(missing)).toBeInTheDocument();
+  });
+
+  it("does not leave an empty list when the only note was the repeat", () => {
+    render(
+      <PlanBanners
+        plan={planWith({
+          banner: "WEATHER_UNAVAILABLE",
+          notes: ["Weather is unavailable for 2 locations; their risk is shown as unknown"],
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole("list")).not.toBeInTheDocument();
+  });
+
   it("lists the notes of the plan", () => {
     render(
       <PlanBanners
