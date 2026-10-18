@@ -8,6 +8,15 @@ import { expectNoA11yViolations } from "../test/axe.ts";
 import { samplePlan } from "../test/plan.ts";
 import { RouteCards } from "./RouteCards.tsx";
 
+/** The plan with its routes lettered A and B, as the API labels them. */
+function lettered(): PlanResponse {
+  const base = plan();
+  return {
+    ...base,
+    routes: base.routes.map((r, index) => ({ ...r, label: `Route ${index === 0 ? "A" : "B"}` })),
+  };
+}
+
 function plan(): PlanResponse {
   const base = samplePlan();
   const [first, second] = base.routes;
@@ -69,6 +78,24 @@ describe("the cards", () => {
     expect(
       screen.getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent),
     ).toEqual([expect.stringContaining("Route R1"), expect.stringContaining("Route R2")]);
+  });
+
+  it("draws the line pattern of each route beside its name, for people who cannot tell colours", () => {
+    const { container } = render(
+      <RouteCards
+        plan={lettered()}
+        selectedId={null}
+        hoveredId={null}
+        onSelect={vi.fn()}
+        onHover={vi.fn()}
+      />,
+    );
+
+    const dashes = [...container.querySelectorAll(".route-card__swatch line")].map((line) =>
+      line.getAttribute("stroke-dasharray"),
+    );
+    expect(dashes).toEqual([null, "7 4"]);
+    expect(container.querySelector(".route-card__swatch")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("says the rank in words for screen readers", () => {
