@@ -10,6 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from planner.domain.risk import WindBasis
 from planner.infra.cache import StaleIfErrorCache
+from planner.infra.fixture_http import FixtureUpstream
 from planner.infra.http import UpstreamClient, upstream_client_from_settings
 from planner.providers.geocode_chain import build_geocoder
 from planner.providers.protocols import GeocodeProvider
@@ -66,8 +67,13 @@ def container_from_settings() -> Container:
     if settings.TRUCK_MAX_SPEED_MPH <= 0:
         msg = "TRUCK_MAX_SPEED_MPH must be positive"
         raise ImproperlyConfigured(msg)
+    recorded = (
+        FixtureUpstream(settings.FIXTURES_DIR).client()
+        if settings.PROVIDERS_MODE == "fixtures"
+        else None
+    )
     return build_container(
-        client=upstream_client_from_settings(),
+        client=upstream_client_from_settings(recorded),
         cache_backend=caches["default"],
         ors_api_key=settings.ORS_API_KEY,
         max_speed_mph=settings.TRUCK_MAX_SPEED_MPH,

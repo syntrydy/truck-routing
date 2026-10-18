@@ -7,6 +7,7 @@ Every variable read here is documented in ``backend/.env.example``. A local
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 from config.caches import caches_for
 
@@ -48,6 +49,19 @@ UPSTREAM_ALLOWED_HOSTS = env.list(
 # Optional openrouteservice key. When set, openrouteservice is the routing fallback behind OSRM.
 # It is a secret: keep it in the environment, never in the repository.
 ORS_API_KEY = env("ORS_API_KEY", default="")
+
+# "live" asks the real upstream services; "fixtures" answers from the recorded responses, for the
+# end-to-end test and offline demos. Fixture answers are not real, so it is for development only
+# unless ALLOW_FIXTURE_PROVIDERS says otherwise (for the end-to-end test in CI).
+PROVIDERS_MODE = env("PROVIDERS_MODE", default="live")
+ALLOW_FIXTURE_PROVIDERS = env.bool("ALLOW_FIXTURE_PROVIDERS", default=False)
+FIXTURES_DIR = BASE_DIR / "fixtures"
+if PROVIDERS_MODE not in {"live", "fixtures"}:
+    msg = 'PROVIDERS_MODE must be "live" or "fixtures"'
+    raise ImproperlyConfigured(msg)
+if PROVIDERS_MODE == "fixtures" and not (DEBUG or ALLOW_FIXTURE_PROVIDERS):
+    msg = "PROVIDERS_MODE=fixtures needs DEBUG=True or ALLOW_FIXTURE_PROVIDERS=True"
+    raise ImproperlyConfigured(msg)
 
 # Per-client rate limits, counted in the cache (SPEC section 6). With per-process memory
 # (no REDIS_URL) each worker counts separately, so the effective limit is higher.
