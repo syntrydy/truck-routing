@@ -20,6 +20,14 @@ interface PlaceInputProps {
 /** A place field: searches as the user types, after a short pause, and reports the choice. */
 export function PlaceInput({ id, label, value, onChange, onBlur, error }: PlaceInputProps) {
   const [text, setText] = useState(value?.label ?? "");
+  // A place chosen from outside (the form switching to the demo trip) shows its name here too.
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    if (value !== null && value.label !== text) {
+      setText(value.label);
+    }
+  }
   const debounced = useDebouncedValue(text, SEARCH_DELAY_MS);
   // Search only for the text as it now stands, never the previous text while the pause runs out.
   const search = useGeocode(value === null && debounced === text ? debounced : "");

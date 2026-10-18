@@ -65,6 +65,23 @@ function setup(geocode: ApiClient["geocode"], onChange?: (place: Place | null) =
   return { user, ...view, input: screen.getByRole("combobox", { name: "From" }) };
 }
 
+describe("a place chosen from outside", () => {
+  it("shows its name in the box and does not search for it", async () => {
+    const geocode = geocodeReturning(DENVER);
+    const wrapper = apiWrapper(stubClient({ geocode }));
+    const { rerender } = render(
+      <PlaceInput id="from" label="From" value={DENVER_IOWA} onChange={() => undefined} />,
+      { wrapper },
+    );
+
+    rerender(<PlaceInput id="from" label="From" value={DENVER} onChange={() => undefined} />);
+    await pass(SEARCH_DELAY_MS + 10);
+
+    expect(screen.getByRole("combobox", { name: "From" })).toHaveValue(DENVER.label);
+    expect(geocode).not.toHaveBeenCalled();
+  });
+});
+
 describe("searching", () => {
   it("waits for a pause in typing before asking", async () => {
     const geocode = geocodeReturning(DENVER);
