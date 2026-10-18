@@ -489,6 +489,22 @@ body,
   cursor: pointer;
 }
 
+/* The summary beside the pointer on a route line. */
+.route-tip-popup .maplibregl-popup-content {
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+  pointer-events: none;
+}
+
+.route-tip {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
 .trip-summary {
   display: grid;
   gap: 0.5rem;
