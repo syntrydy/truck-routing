@@ -14,7 +14,8 @@ from django.http import HttpRequest
 # The longest a refused client has to wait: limits are per minute. django-ratelimit does not
 # report the time left in its window, so the whole period is the honest upper bound.
 RETRY_AFTER_S = 60
-UNKNOWN_ADDRESS = "0.0.0.0"  # noqa: S104  # nosec B104 - a placeholder bucket key, not a bind address
+# A placeholder bucket key for clients without an address, not a bind address.
+UNKNOWN_ADDRESS = "0.0.0.0"  # noqa: S104  # nosec B104
 
 
 def client_ip(request: HttpRequest) -> str:
