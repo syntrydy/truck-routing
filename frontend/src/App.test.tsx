@@ -70,14 +70,6 @@ describe("App", () => {
     });
     const map = fake.maps[0];
 
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await user.keyboard("{ArrowDown}{Enter}");
-    }
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
     await waitFor(() => {
@@ -104,14 +96,6 @@ describe("App", () => {
       expect(fake.maps[0]?.layers).toHaveLength(5);
     });
     const map = fake.maps[0];
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await user.keyboard("{ArrowDown}{Enter}");
-    }
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
     const first = await screen.findByRole("button", { name: "Route R1" });
@@ -143,14 +127,6 @@ describe("App", () => {
     await waitFor(() => {
       expect(fake.maps[0]?.layers).toHaveLength(5);
     });
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await user.keyboard("{ArrowDown}{Enter}");
-    }
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("button", { name: "Route R2" });
 
@@ -168,14 +144,6 @@ describe("App", () => {
     await waitFor(() => {
       expect(fake.maps[0]?.layers).toHaveLength(5);
     });
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await context.user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await context.user.keyboard("{ArrowDown}{Enter}");
-    }
     await context.user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("slider", { name: "Forecast hour" });
     return context;
@@ -290,14 +258,6 @@ describe("App", () => {
     );
     const { user } = renderApp({ plan });
 
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await user.keyboard("{ArrowDown}{Enter}");
-    }
     await act(async () => {
       await user.click(screen.getByRole("button", { name: "Plan trip" }));
     });
@@ -307,23 +267,11 @@ describe("App", () => {
 });
 
 describe("states", () => {
-  async function chooseTrip(user: ReturnType<typeof userEvent.setup>) {
-    for (const [name, typed] of [
-      ["From", "chicago"],
-      ["To", "denver"],
-    ] as const) {
-      await user.type(screen.getByRole("combobox", { name }), typed);
-      await screen.findByRole("option");
-      await user.keyboard("{ArrowDown}{Enter}");
-    }
-  }
-
   it("explains what to do before a first plan, and stops once there is one", async () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
-    expect(screen.getByText(/Choose where you start and where you are going/)).toBeInTheDocument();
+    expect(screen.getByText(/Check where you start and where you are going/)).toBeInTheDocument();
 
-    await chooseTrip(user);
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
     await screen.findByRole("button", { name: "Route R1" });
 
@@ -333,7 +281,6 @@ describe("states", () => {
   it("shows progress while the plan is worked out", async () => {
     const plan = vi.fn<ApiClient["plan"]>(() => new Promise(() => undefined));
     const { user } = renderApp({ plan });
-    await chooseTrip(user);
 
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
@@ -354,7 +301,6 @@ describe("states", () => {
       )
       .mockResolvedValue(samplePlan());
     const { user } = renderApp({ plan });
-    await chooseTrip(user);
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
     const alert = await screen.findByRole("alert");
@@ -371,7 +317,6 @@ describe("states", () => {
   it("puts focus on the results when a plan arrives, and announces it", async () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
-    await chooseTrip(user);
 
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
@@ -389,7 +334,6 @@ describe("states", () => {
       "aria-expanded",
       "true",
     );
-    await chooseTrip(user);
 
     await user.click(screen.getByRole("button", { name: "Plan trip" }));
 
@@ -404,7 +348,6 @@ describe("states", () => {
       Promise.reject(new ApiError({ code: "NO_ROUTE", message: "x", status: 422 })),
     );
     const { user } = renderApp({ plan });
-    await chooseTrip(user);
     await user.click(screen.getByRole("button", { name: /Trip details/ })); // the person closed it
     expect(screen.getByRole("button", { name: /Trip details/ })).toHaveAttribute(
       "aria-expanded",

@@ -10,6 +10,20 @@ export const MAX_LOAD_LB = 200_000;
 export const HEAVY_LOAD_LB = 80_000;
 export const DEFAULT_INTERVAL_MI: Interval = 25;
 
+/** The trip the form starts with: SPEC section 5's example, a long run across the plains. */
+export const DEFAULT_ORIGIN: Place = {
+  label: "Chicago, Illinois, United States",
+  lat: 41.8781,
+  lon: -87.6298,
+  kind: "city",
+};
+export const DEFAULT_DESTINATION: Place = {
+  label: "Denver, Colorado, United States",
+  lat: 39.7392,
+  lon: -104.9903,
+  kind: "city",
+};
+
 const MINUTE_MS = 60_000;
 const DAY_MS = 24 * 60 * MINUTE_MS;
 export const PAST_GRACE_MS = 15 * MINUTE_MS;
@@ -42,13 +56,13 @@ export function formatLocalInput(date: Date): string {
   );
 }
 
-/** The form to start with: nothing chosen, leaving at the next full hour. */
+/** The form to start with: the default trip, leaving at the next full hour. */
 export function defaultTripValues(now: Date): TripValues {
   const nextHour = new Date(now);
   nextHour.setHours(now.getHours() + 1, 0, 0, 0);
   return {
-    origin: null,
-    destination: null,
+    origin: DEFAULT_ORIGIN,
+    destination: DEFAULT_DESTINATION,
     departure: formatLocalInput(nextHour),
     load: String(DEFAULT_LOAD_LB),
     interval: DEFAULT_INTERVAL_MI,

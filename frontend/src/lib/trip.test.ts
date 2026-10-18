@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { CHICAGO, DENVER, NOW } from "../test/places.ts";
 import {
+  DEFAULT_DESTINATION,
+  DEFAULT_ORIGIN,
   defaultTripValues,
   formatLocalInput,
   isStale,
@@ -22,14 +24,18 @@ const minutesFromNow = (minutes: number) =>
   formatLocalInput(new Date(NOW.getTime() + minutes * 60_000));
 
 describe("defaultTripValues", () => {
-  it("leaves at the next full hour, with 42,000 lb and checkpoints every 25 miles", () => {
+  it("plans Chicago to Denver, leaving at the next full hour, with 42,000 lb and checkpoints every 25 miles", () => {
     expect(defaultTripValues(NOW)).toEqual({
-      origin: null,
-      destination: null,
+      origin: DEFAULT_ORIGIN,
+      destination: DEFAULT_DESTINATION,
       departure: "2026-10-18T14:00",
       load: "42000",
       interval: 25,
     });
+  });
+
+  it("makes a request that needs no further input", () => {
+    expect(toPlanRequest(defaultTripValues(NOW), NOW)).not.toBeNull();
   });
 
   it("moves to the next hour even on the hour", () => {

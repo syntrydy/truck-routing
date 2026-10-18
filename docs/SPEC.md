@@ -248,6 +248,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 
 ## 7. Frontend
 
+- Form defaults: origin Chicago, destination Denver (the example trip of section 5), departure at the next full hour, 42,000 lb, 25 mi checkpoints, so a first visit can plan at once. Editing a place field un-chooses it until a new one is picked.
 - Layout: full-screen map; left panel (form + route cards); bottom forecast slider. Mobile: panel becomes bottom sheet.
 - Map: MapLibre, created once. Layers: routes (recommended thick, on top), checkpoints (one GeoJSON source, data-driven color), heatmap, truck marker at slider hour on the selected route.
 - Heatmap: MapLibre `heatmap` layer, weight = level/4, ramp green → yellow → orange → red → purple, unknown = grey; fades to circles above zoom 9. 49 FeatureCollections built once with `useMemo`; slider calls `setData`, throttled with `requestAnimationFrame`. Play button steps 1 h / 400 ms. Toggle: risk / wind / rain / snow. Label shows absolute local time and offset.

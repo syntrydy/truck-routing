@@ -91,8 +91,8 @@ export function App() {
           />
           {hasNothingYet && (
             <p className="empty-state">
-              Choose where you start and where you are going. You will see up to three routes,
-              ranked by weather risk, and a forecast for the next 48 hours along them.
+              Check where you start and where you are going, or change them. You will see up to
+              three routes, ranked by weather risk, and a forecast for the next 48 hours along them.
             </p>
           )}
           {plan.data !== undefined && (
