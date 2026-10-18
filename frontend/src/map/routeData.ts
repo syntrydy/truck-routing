@@ -2,6 +2,7 @@ import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 
 import type { PlanResponse, RiskLevel } from "../api/types.ts";
 import { LEVEL_STYLES } from "../lib/risk.ts";
+import { routeLetter, routePattern, type RoutePattern } from "../lib/routeStyle.ts";
 
 type Route = PlanResponse["routes"][number];
 
@@ -18,6 +19,9 @@ export interface RouteProperties {
   rank: number;
   recommended: boolean;
   emphasis: RouteEmphasis;
+  /** The route's letter, drawn along it, and the pattern of its line. */
+  letter: string;
+  pattern: RoutePattern;
   /** Drawing order: higher is drawn on top. */
   order: number;
 }
@@ -61,6 +65,8 @@ export function routeFeatures(
         rank: route.rank,
         recommended: route.rank === 1,
         emphasis,
+        letter: routeLetter(route.label),
+        pattern: routePattern(route.label),
         order: routes.length - route.rank + boost,
       },
     };

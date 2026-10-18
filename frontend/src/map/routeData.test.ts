@@ -24,6 +24,20 @@ describe("routeFeatures", () => {
     expect(features[1]?.properties).toMatchObject({ rank: 2, recommended: false });
   });
 
+  it("gives each route its letter and the pattern of its line, whatever its rank", () => {
+    const lettered = routes.map((candidate, index) => ({
+      ...candidate,
+      label: `Route ${index === 0 ? "C" : "A"}`,
+    }));
+
+    const { features } = routeFeatures(lettered, NONE);
+
+    expect(features.map((f) => [f.properties.letter, f.properties.pattern])).toEqual([
+      ["C", "dotted"],
+      ["A", "solid"],
+    ]);
+  });
+
   it("draws better routes over worse ones", () => {
     const [first, second] = routeFeatures(routes, NONE).features;
 
