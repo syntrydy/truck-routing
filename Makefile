@@ -1,4 +1,4 @@
-.PHONY: gen-api api-check be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build check
+.PHONY: gen-api api-check be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build fe-e2e check
 
 BACKEND := backend
 FRONTEND := frontend
@@ -36,4 +36,7 @@ fe-test: ## vitest
 fe-build: ## production build
 	cd $(FRONTEND) && npm run build
 
-check: be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build ## everything CI runs
+fe-e2e: ## browser smoke test against the API in fixture mode (needs: npx playwright install chromium)
+	cd $(FRONTEND) && npm run e2e
+
+check: be-lint be-type be-test be-sec fe-lint fe-type fe-test fe-build fe-e2e ## everything CI runs

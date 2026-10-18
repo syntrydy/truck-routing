@@ -57,6 +57,10 @@ export function useMap(container: RefObject<HTMLElement | null>): MapState {
           zoom: INITIAL_ZOOM,
           attributionControl: false,
         });
+        if (import.meta.env.DEV) {
+          // The end-to-end test finds checkpoints on screen through the map; never in a build.
+          Object.assign(window, { __truckMap: created });
+        }
         created.addControl(
           new maplibre.AttributionControl({ compact: false, customAttribution: [...ATTRIBUTION] }),
         );

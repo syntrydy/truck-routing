@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 import { maplibreWorker } from "./maplibreWorker.ts";
 
@@ -19,5 +19,7 @@ export default defineConfig({
     env: { TZ: "America/Chicago" },
     setupFiles: ["./src/test/setup.ts"],
     css: false,
+    // The browser tests run under Playwright, not here.
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });
