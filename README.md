@@ -37,7 +37,7 @@ The API is on a free plan and sleeps when idle, so the first request after a qui
 - A ranked recommendation that says why it won, or says that no route is safe.
 - A weather heatmap along the corridor for the 48 hours after departure, with a slider and play button, and a truck marker that moves along the selected route. It can show risk, wind, rain or snow.
 - Honest about gaps: where weather is missing the risk is Unknown, never Low, and the route is flagged as low confidence.
-- Keyboard accessible, with a phone layout, and clear messages for slow starts and for each kind of error.
+- Works on phones and tablets: the map on top with a trip sheet below, controls sized for a thumb, and a layout that adapts to the room it has. Keyboard accessible, with clear messages for slow starts and for each kind of error.
 
 ## Walkthrough
 
@@ -168,6 +168,7 @@ make fe-e2e                         # the browser test (first: cd frontend && np
 - **The brief's rules, to read beside the brief:** [`backend/tests/unit/test_brief_cases.py`](backend/tests/unit/test_brief_cases.py) is the wind, rain and snow bands, the three load rules, the worst-factor rule, missing weather and the ranking order as plain cases, one line each with the level a truck is told, with a case on both sides of every edge (47 mph with 30,000 lb is Severe, with 30,001 lb it is No Travel). If you read the brief differently, that is the line to challenge.
 - **Backend:** pytest with a coverage gate in CI (the whole backend at least 85%; the pure domain is at 100% and the backend overall at 99%). Boundary values of every band are tested on both sides, with property tests for ordering; providers are tested against recorded responses and never touch the network.
 - **Frontend:** Vitest and Testing Library for components, hooks and map code (MapLibre is replaced by a fake), and axe-core for accessibility.
+- **Phones and tablets:** Playwright tests at seven screen sizes (a small phone, a phone, tablets held both ways, a phone held sideways, a small laptop) check that nothing scrolls sideways or is cut off, the controls are inside the screen, touch targets are at least 44 px, the map keeps at least 40% of the screen and the map credit is folded where it would cover the map.
 - **End to end:** two Playwright tests run against the real API on recorded responses. One plans a trip, opens a checkpoint on the map and moves the forecast; the other runs the stormy demo and checks the danger, the recommendation and the banner.
 
 ## Security scanning

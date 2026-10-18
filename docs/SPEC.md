@@ -303,7 +303,8 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 ## 7. Frontend
 
 - Form defaults: origin Chicago, destination Denver (the example trip of section 5), departure at the next full hour, 42,000 lb, 25 mi checkpoints, so a first visit can plan at once. Editing a place field un-chooses it until a new one is picked.
-- Layout: full-screen map; left panel (form + route cards); bottom forecast slider. Mobile: panel becomes bottom sheet.
+- Layout: full-screen map; left panel (form + route cards); bottom forecast slider. Phones (up to 50 rem wide) and tablets held upright (up to 64 rem) get the sheet layout: the map on top, the forecast control under it and the panel as a bottom sheet folded to a bar of one line that clears the home indicator. Wider screens get the side panel. The forecast control lays itself out by its own width (a container query): narrow, the play button and slider share a row, the time sits under them, the four variable buttons span the width and the colour key is one line that scrolls, with its explanation behind "How to read the colours"; from 40 rem it is the wide form. On a screen under 32 rem high (a phone held sideways) it takes the fewest rows it can.
+- Touch: on a touch screen everything tapped is at least 44 px high, including the map's zoom buttons; the map's credit is the compact (i) button, closed at first, on a cramped screen and in full elsewhere.
 - Map: MapLibre, created once. Layers: routes (recommended thick, on top), checkpoints (one GeoJSON source, data-driven color), heatmap, truck marker at slider hour on the selected route.
 - Heatmap: one soft circle per grid point in that point's own colour on the legend's scale (green → yellow → orange → red → purple, unknown = grey), sized by the grid spacing so neighbours join up, the worse point drawn on top where they meet; fades to crisp circles above zoom 8. Not a MapLibre `heatmap` layer: that colours by the density of points, so overlapping Moderate points would add up to red. A caption says the map shows the slider's time and the dots on the routes show the arrival time. 49 FeatureCollections built once with `useMemo`; slider calls `setData`, throttled with `requestAnimationFrame`. Play button steps 1 h / 400 ms. Toggle: risk / wind / rain / snow. Label shows absolute local time and offset.
 - Planned trip: once a plan arrives the form folds (hidden, so nothing typed is lost) into a one-line summary ("Denver → Salt Lake City · Sun 8:33 PM · 42,000 lb · every 25 mi") with an Edit trip button, so the route cards fit on screen; Edit opens the form with focus in its first field, and a failed plan keeps it open.
@@ -315,7 +316,7 @@ Partial weather failure is **not** an error: 200 with UNKNOWN levels and banner 
 - States: cold start ("Waking up the server…", triggered by `/api/health` ping on load), loading steps, error per code, empty, stale inputs ("Inputs changed — re-plan").
 - Accessibility: never color alone; keyboard slider; focus management; WCAG AA contrast.
 - Attribution visible: © OpenStreetMap contributors, OSRM, Open-Meteo (CC BY 4.0), OpenFreeMap.
-- Performance budget: slider ≥ 55 fps on a mid-range laptop; initial JS ≤ 300 KB gzipped (MapLibre lazy-loaded chunk excluded); plan response ≤ 300 KB gzipped.
+- Performance budget: slider ≥ 55 fps on a mid-range laptop; initial JS ≤ 300 KB gzipped (MapLibre lazy-loaded chunk excluded); plan response ≤ 300 KB gzipped. The app's scripts are in three chunks (the app's own, React, the query library) so that a deploy does not make a returning visitor download the libraries again, and MapLibre's download starts as soon as they have arrived.
 
 ## 8. Security
 
