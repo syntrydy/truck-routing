@@ -12,6 +12,7 @@ import {
   timeZoneLabel,
   toOffsetIso,
   toPlanRequest,
+  withDemoTrip,
   validateTrip,
   type TripValues,
 } from "./trip.ts";
@@ -185,5 +186,19 @@ describe("isStale", () => {
 
   it("is true while the form is incomplete after a plan", () => {
     expect(isStale(planned, null)).toBe(true);
+  });
+});
+
+describe("withDemoTrip", () => {
+  it("sets the recorded trip, leaving now, and keeps the load and the spacing", () => {
+    const values = { ...defaultTripValues(NOW), load: "36000", interval: 50 as const };
+
+    const demo = withDemoTrip(values, NOW);
+
+    expect(demo.origin?.label).toBe(DENVER.label);
+    expect(demo.destination?.label).toBe("Salt Lake City, Utah, United States");
+    expect(demo.departure).toBe("2026-10-18T13:20");
+    expect(demo.load).toBe("36000");
+    expect(demo.interval).toBe(50);
   });
 });

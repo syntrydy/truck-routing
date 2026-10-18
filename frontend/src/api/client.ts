@@ -30,7 +30,12 @@ export interface ApiClient {
   ready: (signal?: AbortSignal) => Promise<Ready>;
   geocode: (query: string, signal?: AbortSignal) => Promise<GeocodeResponse>;
   plan: (request: PlanRequest, signal?: AbortSignal) => Promise<PlanResponse>;
+  /** The recorded storm: only the load and the checkpoint spacing of `request` are used. */
+  demo: (request: DemoRequest, signal?: AbortSignal) => Promise<PlanResponse>;
 }
+
+/** What the demo takes from a trip: the trip itself is recorded. */
+export type DemoRequest = Pick<PlanRequest, "load_lb" | "interval_mi">;
 
 interface Call {
   path: string;
@@ -83,6 +88,15 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
       request<GeocodeResponse>({
         path: `/api/geocode?${new URLSearchParams({ q: query }).toString()}`,
         timeoutMs: timeouts.geocode,
+        signal,
+      }),
+    demo: ({ load_lb, interval_mi }, signal) =>
+      request<PlanResponse>({
+        path: `/api/demo?${new URLSearchParams({
+          load_lb: String(load_lb),
+          interval_mi: String(interval_mi),
+        }).toString()}`,
+        timeoutMs: timeouts.plan,
         signal,
       }),
     plan: (body, signal) =>

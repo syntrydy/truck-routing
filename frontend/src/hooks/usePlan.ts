@@ -3,8 +3,17 @@ import { useMutation } from "@tanstack/react-query";
 import { useApi } from "../api/ApiProvider.tsx";
 import type { PlanRequest } from "../api/types.ts";
 
-/** Plans a trip. Call `mutate` with the form's request; `data` is the plan once it is in. */
+/** What to plan: the form's trip, or the recorded storm with that form's load and spacing. */
+export interface PlanCall {
+  kind: "trip" | "demo";
+  request: PlanRequest;
+}
+
+/** Plans a trip. Call `mutate` with the call to make; `data` is the plan once it is in. */
 export function usePlan() {
   const api = useApi();
-  return useMutation({ mutationFn: (request: PlanRequest) => api.plan(request) });
+  return useMutation({
+    mutationFn: ({ kind, request }: PlanCall) =>
+      kind === "demo" ? api.demo(request) : api.plan(request),
+  });
 }

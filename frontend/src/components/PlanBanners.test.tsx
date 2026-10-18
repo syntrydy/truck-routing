@@ -37,6 +37,18 @@ describe("PlanBanners", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("says the demo is a recording, and says nothing of the kind for a live plan", () => {
+    const demo = planWith({ meta: { ...samplePlan().meta, weather_source: "demo" } });
+    const { rerender } = render(<PlanBanners plan={demo} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Demo: a recording, not a live forecast.");
+    expect(screen.getByRole("status")).toHaveTextContent("17 January 2024");
+
+    rerender(<PlanBanners plan={planWith({ banner: null, notes: [] })} />);
+
+    expect(screen.queryByText(/Demo:/)).not.toBeInTheDocument();
+  });
+
   it("lists the notes of the plan", () => {
     render(
       <PlanBanners

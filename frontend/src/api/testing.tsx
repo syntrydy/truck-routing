@@ -23,6 +23,7 @@ export function stubClient(overrides: Partial<ApiClient> = {}): ApiClient {
     ready: unexpected,
     geocode: unexpected,
     plan: unexpected,
+    demo: unexpected,
     ...overrides,
   };
 }

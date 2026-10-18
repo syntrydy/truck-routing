@@ -2,6 +2,9 @@ import { memo } from "react";
 
 import type { PlanResponse } from "../api/types.ts";
 
+/** What the API reports as the weather source of the recorded demo. */
+const DEMO_SOURCE = "demo";
+
 interface PlanBannersProps {
   plan: PlanResponse;
 }
@@ -10,6 +13,13 @@ interface PlanBannersProps {
 export const PlanBanners = memo(function PlanBanners({ plan }: PlanBannersProps) {
   return (
     <div className="banners">
+      {plan.meta.weather_source === DEMO_SOURCE && (
+        <p className="banner banner--demo" role="status">
+          <strong>Demo: a recording, not a live forecast.</strong> These routes and this weather are
+          from a real wind storm on I-80 in Wyoming on 17 January 2024, replayed from the moment you
+          started the demo. Do not use it to plan a real trip.
+        </p>
+      )}
       {plan.banner === "NO_SAFE_ROUTE" && (
         <p className="banner banner--danger" role="alert">
           <strong>No safe route.</strong> Every route has a stretch where weather makes travel

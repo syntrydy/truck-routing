@@ -77,6 +77,16 @@ describe("requests", () => {
     expect(JSON.parse(init?.body as string)).toEqual(PLAN);
   });
 
+  it("asks for the demo with the load and the spacing only", async () => {
+    const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse({ routes: [] })));
+
+    await clientWith(fetchMock).demo({ load_lb: 42_000, interval_mi: 25 });
+
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe("https://api.example.test/api/demo?load_lb=42000&interval_mi=25");
+    expect(init?.method).toBeUndefined();
+  });
+
   it("does not send credentials or custom headers on a read", async () => {
     const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse({ status: "ok" })));
 
@@ -146,6 +156,7 @@ describe("timeouts", () => {
     ["health", 60_000, (c: ReturnType<typeof clientWith>) => c.health()],
     ["ready", 10_000, (c: ReturnType<typeof clientWith>) => c.ready()],
     ["plan", 30_000, (c: ReturnType<typeof clientWith>) => c.plan(PLAN)],
+    ["demo", 30_000, (c: ReturnType<typeof clientWith>) => c.demo(PLAN)],
   ])("%s waits %d ms", async (_name, ms, call) => {
     const result = call(clientWith(hangingFetch())).catch((e: unknown) => e);
 

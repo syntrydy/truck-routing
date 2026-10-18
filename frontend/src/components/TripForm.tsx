@@ -10,6 +10,7 @@ import {
   timeZoneLabel,
   toPlanRequest,
   validateTrip,
+  withDemoTrip,
   type TripField,
   type TripValues,
 } from "../lib/trip.ts";
@@ -19,6 +20,8 @@ interface TripFormProps {
   /** The request the plan on screen was made for, if any; changing an input then makes it stale. */
   planned: PlanRequest | null;
   onSubmit: (request: PlanRequest) => void;
+  /** The stormy demo, with the form set to the demo trip; only its load and spacing are used. */
+  onDemo: (request: PlanRequest) => void;
   /** The current time; a prop so that tests can fix it. */
   now?: () => Date;
 }
@@ -29,6 +32,7 @@ const FIELDS: readonly TripField[] = ["origin", "destination", "departure", "loa
 export const TripForm = memo(function TripForm({
   planned,
   onSubmit,
+  onDemo,
   now = () => new Date(),
 }: TripFormProps) {
   const id = useId();
@@ -50,9 +54,9 @@ export const TripForm = memo(function TripForm({
   };
   const errorFor = (field: TripField) => (shown.has(field) ? errors[field] : undefined);
 
-  const submit = (event: SubmitEvent) => {
-    event.preventDefault();
-    if (request === null) {
+  /** Send `next` on with `send`, or show what is wrong with it and focus the first problem. */
+  const sendOrShowProblems = (next: PlanRequest | null, send: (request: PlanRequest) => void) => {
+    if (next === null) {
       reveal(...FIELDS);
       // Move focus to the first field with a problem once the messages are on screen.
       requestAnimationFrame(() => {
@@ -60,7 +64,18 @@ export const TripForm = memo(function TripForm({
       });
       return;
     }
-    onSubmit(request);
+    send(next);
+  };
+
+  const submit = (event: SubmitEvent) => {
+    event.preventDefault();
+    sendOrShowProblems(request, onSubmit);
+  };
+
+  const demo = () => {
+    const next = withDemoTrip(values, current);
+    setValues(next);
+    sendOrShowProblems(toPlanRequest(next, current), onDemo);
   };
 
   return (
@@ -170,6 +185,20 @@ export const TripForm = memo(function TripForm({
       <button type="submit" className="trip-form__submit">
         {planned === null ? "Plan trip" : "Re-plan"}
       </button>
+      <div className="trip-form__demo">
+        <button
+          type="button"
+          className="trip-form__demo-button"
+          aria-describedby={`${id}-demo-hint`}
+          onClick={demo}
+        >
+          Try the stormy demo
+        </button>
+        <p id={`${id}-demo-hint`} className="field__hint">
+          Denver to Salt Lake City in a recording of a real wind storm on I-80 in Wyoming, to see
+          High, Severe and No Travel at work. Not a live forecast.
+        </p>
+      </div>
     </form>
   );
 });

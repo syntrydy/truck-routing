@@ -314,6 +314,43 @@ describe("states", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("plans the stormy demo through the demo call and says it is a recording", async () => {
+    const recording = samplePlan();
+    const demo = vi.fn<ApiClient["demo"]>(() =>
+      Promise.resolve({ ...recording, meta: { ...recording.meta, weather_source: "demo" } }),
+    );
+    const plan = vi.fn<ApiClient["plan"]>();
+    const { user } = renderApp({ demo, plan });
+
+    await user.click(screen.getByRole("button", { name: "Try the stormy demo" }));
+
+    expect(await screen.findByText(/Demo: a recording, not a live forecast/)).toBeInTheDocument();
+    expect(demo).toHaveBeenCalledTimes(1);
+    expect(demo.mock.calls[0]?.[0]).toMatchObject({ load_lb: 42_000, interval_mi: 25 });
+    expect(plan).not.toHaveBeenCalled();
+    expect(screen.getByRole("combobox", { name: "To" })).toHaveValue(
+      "Salt Lake City, Utah, United States",
+    );
+  });
+
+  it("tries the demo again, not a live plan, after the demo failed", async () => {
+    const demo = vi
+      .fn<ApiClient["demo"]>()
+      .mockRejectedValueOnce(new ApiError({ code: "NETWORK", message: "down", status: 0 }))
+      .mockResolvedValue(samplePlan());
+    const plan = vi.fn<ApiClient["plan"]>();
+    const { user } = renderApp({ demo, plan });
+    await user.click(screen.getByRole("button", { name: "Try the stormy demo" }));
+
+    await user.click(
+      within(await screen.findByRole("alert")).getByRole("button", { name: "Try again" }),
+    );
+
+    await screen.findByRole("button", { name: "Route R1" });
+    expect(demo).toHaveBeenCalledTimes(2);
+    expect(plan).not.toHaveBeenCalled();
+  });
+
   it("puts focus on the results when a plan arrives, and announces it", async () => {
     const plan = vi.fn<ApiClient["plan"]>(() => Promise.resolve(samplePlan()));
     const { user } = renderApp({ plan });
