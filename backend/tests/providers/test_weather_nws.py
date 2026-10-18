@@ -366,7 +366,11 @@ class TestGaps:
         setup.provider.hourly(places, DAY, DAY)
 
         (record,) = [r for r in caplog.records if r.levelno == logging.WARNING]
-        assert "nws lost weather for 5 of 5 places: 5 x HTTP 503" in record.getMessage()
+        # The breaker opens after a few failures, so how many places see "HTTP 503"
+        # rather than "circuit open" depends on thread timing; the grouping does not.
+        message = record.getMessage()
+        assert "nws lost weather for 5 of 5 places: " in message
+        assert "x HTTP 503" in message
 
     def test_a_place_naming_a_grid_on_another_host_is_refused(
         self, api: respx.MockRouter, setup: Setup
