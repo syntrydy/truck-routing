@@ -36,8 +36,14 @@ function geocodeReturning(...places: Place[]) {
 }
 
 /** A `PlaceInput` the way a form holds it: the chosen place lives in the parent. */
-function Harness({ onChange }: { onChange?: (place: Place | null) => void }) {
-  const [value, setValue] = useState<Place | null>(null);
+function Harness({
+  onChange,
+  initial = null,
+}: {
+  onChange?: (place: Place | null) => void;
+  initial?: Place | null;
+}) {
+  const [value, setValue] = useState<Place | null>(initial);
   return (
     <PlaceInput
       id="from"
@@ -71,6 +77,18 @@ describe("searching", () => {
     await pass(1);
     expect(geocode).toHaveBeenCalledTimes(1);
     expect(geocode.mock.calls[0]?.[0]).toBe("denv");
+  });
+
+  it("never searches for the label of a place it started with once that is edited", async () => {
+    const geocode = geocodeReturning(DENVER);
+    const user = userEvent.setup({ delay: null });
+    render(<Harness initial={DENVER_IOWA} />, { wrapper: apiWrapper(stubClient({ geocode })) });
+
+    await user.type(screen.getByRole("combobox", { name: "From" }), "x");
+    await pass(SEARCH_DELAY_MS + 10);
+
+    expect(geocode).toHaveBeenCalledTimes(1);
+    expect(geocode.mock.calls[0]?.[0]).toBe(`${DENVER_IOWA.label}x`);
   });
 
   it("asks once for what was typed, not for every key", async () => {
