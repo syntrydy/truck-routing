@@ -19,14 +19,14 @@
     "gen:api": "openapi-typescript ../backend/openapi/schema.json -o src/api/schema.d.ts"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.4",
-    "maplibre-gl": "^6.15.0",
+    "@tanstack/react-query": "^5.105.0",
+    "maplibre-gl": "^6.16.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
-    "@maplibre/maplibre-gl-style-spec": "^26.4.4",
+    "@maplibre/maplibre-gl-style-spec": "^26.5.0",
     "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -45,8 +45,8 @@
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.9.10",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.71.2",
-    "vite": "^8.3.4",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   },
   "overrides": {
